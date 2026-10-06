@@ -68,26 +68,27 @@ BLENDER_MENUS = [LOAD_IN_BLENDER, REFERENCE_IN_BLENDER,]
 
 class Palette(wx.Panel):
     def __init__(self, *args, **kwds):
+        bitmap = kwds.pop("bitmap", wx.Bitmap)
         # begin wxGlade: Palette.__init__
         kwds["style"] = wx.TAB_TRAVERSAL
         wx.Panel.__init__(self, *args, **kwds)
-        self.logo = wx.StaticBitmap(self, -1, wx.Bitmap("skins/default/blenpy.png", wx.BITMAP_TYPE_ANY))
-        self.previous = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/tab_left.png", wx.BITMAP_TYPE_ANY))
-        self.next = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/tab_right.png", wx.BITMAP_TYPE_ANY))
-        self.find = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/viewmag.png", wx.BITMAP_TYPE_ANY))
-        self.goto = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/goto.png", wx.BITMAP_TYPE_ANY))
-        self.browse_source = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/thumbnail.png", wx.BITMAP_TYPE_ANY))
-        self.check = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/pychecker.png", wx.BITMAP_TYPE_ANY))
-        self.dedent = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/dedent.png", wx.BITMAP_TYPE_ANY))
-        self.indent = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/indent.png", wx.BITMAP_TYPE_ANY))
-        self.comment = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/comment.png", wx.BITMAP_TYPE_ANY))
-        self.uncomment = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/uncomment.png", wx.BITMAP_TYPE_ANY))
-        self.run = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/run.png", wx.BITMAP_TYPE_ANY))
-        self.imprt = wx.BitmapButton(self, -1, wx.Bitmap("skins\\default\\import.png", wx.BITMAP_TYPE_ANY))
-        self.sidebar = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/view_left_right.png", wx.BITMAP_TYPE_ANY))
-        self.run_verbose = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/debug.png", wx.BITMAP_TYPE_ANY))
-        self.shell = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/view_top_bottom.png", wx.BITMAP_TYPE_ANY))
-        self.donate = wx.BitmapButton(self, -1, wx.Bitmap("skins/default/donate.png", wx.BITMAP_TYPE_ANY))
+        self.logo = wx.StaticBitmap(self, -1, bitmap("skins/default/blenpy.png", wx.BITMAP_TYPE_ANY))
+        self.previous = wx.BitmapButton(self, -1, bitmap("skins/default/tab_left.png", wx.BITMAP_TYPE_ANY))
+        self.next = wx.BitmapButton(self, -1, bitmap("skins/default/tab_right.png", wx.BITMAP_TYPE_ANY))
+        self.find = wx.BitmapButton(self, -1, bitmap("skins/default/viewmag.png", wx.BITMAP_TYPE_ANY))
+        self.goto = wx.BitmapButton(self, -1, bitmap("skins/default/goto.png", wx.BITMAP_TYPE_ANY))
+        self.browse_source = wx.BitmapButton(self, -1, bitmap("skins/default/thumbnail.png", wx.BITMAP_TYPE_ANY))
+        self.check = wx.BitmapButton(self, -1, bitmap("skins/default/pychecker.png", wx.BITMAP_TYPE_ANY))
+        self.dedent = wx.BitmapButton(self, -1, bitmap("skins/default/dedent.png", wx.BITMAP_TYPE_ANY))
+        self.indent = wx.BitmapButton(self, -1, bitmap("skins/default/indent.png", wx.BITMAP_TYPE_ANY))
+        self.comment = wx.BitmapButton(self, -1, bitmap("skins/default/comment.png", wx.BITMAP_TYPE_ANY))
+        self.uncomment = wx.BitmapButton(self, -1, bitmap("skins/default/uncomment.png", wx.BITMAP_TYPE_ANY))
+        self.run = wx.BitmapButton(self, -1, bitmap("skins/default/run.png", wx.BITMAP_TYPE_ANY))
+        self.imprt = wx.BitmapButton(self, -1, bitmap("skins/default/import.png", wx.BITMAP_TYPE_ANY))
+        self.sidebar = wx.BitmapButton(self, -1, bitmap("skins/default/view_left_right.png", wx.BITMAP_TYPE_ANY))
+        self.run_verbose = wx.BitmapButton(self, -1, bitmap("skins/default/debug.png", wx.BITMAP_TYPE_ANY))
+        self.shell = wx.BitmapButton(self, -1, bitmap("skins/default/view_top_bottom.png", wx.BITMAP_TYPE_ANY))
+        self.donate = wx.BitmapButton(self, -1, bitmap("skins/default/donate.png", wx.BITMAP_TYPE_ANY))
 
         self.__set_properties()
         self.__do_layout()
@@ -554,15 +555,15 @@ class Bar(wx.MenuBar):
         event.Skip()
 
     def menu_insert_signature(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_insert_signature' not implemented"
+        print("Event handler `menu_insert_signature' not implemented")
         event.Skip()
 
     def menu_execute(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_execute' not implemented"
+        print("Event handler `menu_execute' not implemented")
         event.Skip()
 
     def menu_execute_verbose(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_execute_verbose' not implemented"
+        print("Event handler `menu_execute_verbose' not implemented")
         event.Skip()
 
     def menu_preferences(self, event): # wxGlade: Bar.<event_handler>
@@ -584,15 +585,15 @@ class Bar(wx.MenuBar):
         event.Skip()
 
     def menu_as_notebook(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_as_notebook' not implemented"
+        print("Event handler `menu_as_notebook' not implemented")
         event.Skip()
 
     def menu_as_columns(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_as_columns' not implemented"
+        print("Event handler `menu_as_columns' not implemented")
         event.Skip()
 
     def menu_as_rows(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_as_rows' not implemented"
+        print("Event handler `menu_as_rows' not implemented")
         event.Skip()
 
     def menu_sidebar(self, event): # wxGlade: Bar.<event_handler>
@@ -608,15 +609,15 @@ class Bar(wx.MenuBar):
         event.Skip()
 
     def menu_run_terminal(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_run_terminal' not implemented"
+        print("Event handler `menu_run_terminal' not implemented")
         event.Skip()
 
     def menu_run_terminal_without_arguments(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_run_terminal_without_arguments' not implemented"
+        print("Event handler `menu_run_terminal_without_arguments' not implemented")
         event.Skip()
 
     def menu_run_terminal_without_arguments_exit(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_run_terminal_without_arguments_exit' not implemented"
+        print("Event handler `menu_run_terminal_without_arguments_exit' not implemented")
         event.Skip()
 
     def menu_import(self, event): # wxGlade: Bar.<event_handler>
@@ -743,56 +744,56 @@ class Bar(wx.MenuBar):
         event.Skip()
 
     def menu_save_uml_as(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_save_uml_as' not implemented"
+        print("Event handler `menu_save_uml_as' not implemented")
         event.Skip()
 
     def menu_print_uml_setup(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_print_uml_setup' not implemented"
+        print("Event handler `menu_print_uml_setup' not implemented")
         event.Skip()
 
     def menu_uml_preview(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_uml_preview' not implemented"
+        print("Event handler `menu_uml_preview' not implemented")
         event.Skip()
 
     def menu_print_uml(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_print_uml' not implemented"
+        print("Event handler `menu_print_uml' not implemented")
         event.Skip()
 
     def menu_print_uml_preview(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_print_uml_preview' not implemented"
+        print("Event handler `menu_print_uml_preview' not implemented")
         event.Skip()
 
     def menu_run_without_arguments(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_run_without_arguments' not implemented"
+        print("Event handler `menu_run_without_arguments' not implemented")
         event.Skip()
 
     def menu_run_debug(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_run_debug' not implemented"
+        print("Event handler `menu_run_debug' not implemented")
         event.Skip()
 
     def menu_run_without_arguments_exit(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_run_without_arguments_exit' not implemented"
+        print("Event handler `menu_run_without_arguments_exit' not implemented")
         event.Skip()
 
     def menu_toolbar(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_toolbar' not implemented"
+        print("Event handler `menu_toolbar' not implemented")
         event.Skip()
 
     def menu_show_docstring(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_show_docstring' not implemented"
+        print("Event handler `menu_show_docstring' not implemented")
         event.Skip()
 
 
     def menu_save_copy(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_save_copy' not implemented"
+        print("Event handler `menu_save_copy' not implemented")
         event.Skip()
 
     def menu_clear_output(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_clear_output' not implemented"
+        print("Event handler `menu_clear_output' not implemented")
         event.Skip()
 
     def menu_add_spe_to_blender(self, event): # wxGlade: Bar.<event_handler>
-        print "Event handler `menu_add_spe_to_blender' not implemented"
+        print("Event handler `menu_add_spe_to_blender' not implemented")
         event.Skip()
 
 # end of class Bar

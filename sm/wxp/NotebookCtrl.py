@@ -138,8 +138,9 @@ import wx
 from wx.lib.buttons import GenBitmapButton as BitmapButton
 import wx.xrc  as  xrc
 
-import cStringIO, zlib
-import cPickle
+from io import BytesIO
+import zlib
+import pickle as cPickle
 import weakref
 
 # HitTest Results 
@@ -314,7 +315,7 @@ def GetMenuButtonBitmap():
 
 def GetMenuButtonImage():
 
-    stream = cStringIO.StringIO(GetMenuButtonData())
+    stream = BytesIO(GetMenuButtonData())
     return wx.ImageFromStream(stream)
 
 # ---------------------------------------------------------------------------- #
@@ -347,12 +348,13 @@ def GrayOut(anImage):
     return anImage
 
 
-def MakeGray((r,g,b), factor, maskColor):
+def MakeGray(rgb, factor, maskColor):
     """
     Make A Pixel Grayed-Out. If The Pixel Matches The MaskColor, It Won't Be
     Changed.
     """
     
+    r, g, b = rgb
     if (r,g,b) != maskColor:
         return map(lambda x: int((230 - x) * factor) + x, (r,g,b))
     else:
@@ -527,9 +529,9 @@ class ThemeStyle:
         self._silver = False
         self._gradient = False
         self._firstcolour = wx.WHITE
-        self._secondcolour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+        self._secondcolour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
         self._firstcolourselected = wx.WHITE
-        self._secondcolourselected = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+        self._secondcolourselected = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
 
 
     def EnableMacTheme(self, enable=True, style=1):
@@ -696,10 +698,10 @@ class TabbedPage:
         
         self._text = text
         self._image = image
-        self._font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        self._secondaryfont = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        self._font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        self._secondaryfont = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         self._pagetextcolour = wx.BLACK
-        self._pagecolour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+        self._pagecolour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
         self._enable = True
         self._animationimages = []
         self._tooltip = ""
@@ -814,7 +816,7 @@ class NotebookMenuButton(BitmapButton):
         id = wx.NewId()
         myids = []
         
-        for ii in xrange(count):
+        for ii in range(count):
 
             id = id + 1
             myids.append(id)
@@ -941,7 +943,7 @@ class TabCtrl(wx.PyControl):
         self._xrefreshed = False
         self._imageconverted = False
         self._convertimage = False
-        self._disabledcolour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_GRAYTEXT)
+        self._disabledcolour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT)
 
         self._hover = False
         self._parent = parent
@@ -970,8 +972,8 @@ class TabCtrl(wx.PyControl):
         self._tipwindow = None
         self._tiptimer = wx.PyTimer(self.OnShowToolTip)
         self._backtooltip = wx.Colour(255, 255, 230)
-        self._xvideo = wx.SystemSettings_GetMetric(wx.SYS_SCREEN_X)
-        self._yvideo = wx.SystemSettings_GetMetric(wx.SYS_SCREEN_Y)
+        self._xvideo = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_X)
+        self._yvideo = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_Y)
 
         self._selectedtabs = []        
 
@@ -996,17 +998,17 @@ class TabCtrl(wx.PyControl):
         self.SetDefaultPage()        
         
         if style & NC_TOP or style & NC_BOTTOM:
-            self.SetBestSize((-1, 28))
+            self.SetInitialSize((-1, 28))
             self._firsttabpos = wx.Point(3, 0)
         else:
-            self.SetBestSize((28, -1))
+            self.SetInitialSize((28, -1))
             self._firsttabpos = wx.Point(0, 3 + self._CalcSizeToggleBestSize()[1])
 
-        self._borderpen = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNSHADOW)) 
-        self._highlightpen2 = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+        self._borderpen = wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNSHADOW))
+        self._highlightpen2 = wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         self._highlightpen = wx.Pen((145, 167, 180))
-        self._upperhigh = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
-        self._shadowpen = wx.Pen(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DDKSHADOW), 2)
+        self._upperhigh = wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
+        self._shadowpen = wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DDKSHADOW), 2)
         self._shadowpen.SetCap(wx.CAP_BUTT)
         self._highlightpen.SetCap(wx.CAP_BUTT)
         self._highlightpen2.SetCap(wx.CAP_BUTT)
@@ -1124,7 +1126,7 @@ class TabCtrl(wx.PyControl):
                 newpages = []
                 counter = self.GetPageCount() - 1
                 
-                for ii in xrange(self.GetPageCount()):  
+                for ii in range(self.GetPageCount()):
                     newpages.append(self._parent.GetPage(ii))
                     self._parent.bsizer.Detach(counter-ii)
 
@@ -1317,7 +1319,7 @@ class TabCtrl(wx.PyControl):
 ##            self._selection = self.GetPageCount() - 1
         
         if self._style & NC_LEFT or self._style & NC_RIGHT:
-            self.SetBestSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
+            self.SetInitialSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
             
         self.Refresh()
  
@@ -1351,7 +1353,7 @@ class TabCtrl(wx.PyControl):
                 self._selection = self._selection + 1
         
         if self._style & NC_LEFT or self._style & NC_RIGHT:
-            self.SetBestSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
+            self.SetInitialSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
                         
         self.Refresh()
             
@@ -1541,7 +1543,7 @@ class TabCtrl(wx.PyControl):
         self._imglist = imagelist
         self._grayedlist = wx.ImageList(16, 16, True, 0)
         
-        for ii in xrange(imagelist.GetImageCount()):
+        for ii in range(imagelist.GetImageCount()):
             
             bmp = imagelist.GetBitmap(ii)
             image = wx.ImageFromBitmap(bmp)
@@ -1556,7 +1558,7 @@ class TabCtrl(wx.PyControl):
         self._imglist = imagelist
         self._grayedlist = wx.ImageList(16, 16, True, 0)
         
-        for ii in xrange(imagelist.GetImageCount()):
+        for ii in range(imagelist.GetImageCount()):
             
             bmp = imagelist.GetBitmap(ii)
             image = wx.ImageFromBitmap(bmp)
@@ -1623,7 +1625,7 @@ class TabCtrl(wx.PyControl):
             self._firsttime = True
 
             if self._style & NC_LEFT or self._style & NC_RIGHT:
-                self.SetBestSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
+                self.SetInitialSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
                 self._parent.GetSizer().Layout()
             
             self.Refresh()        
@@ -1636,9 +1638,9 @@ class TabCtrl(wx.PyControl):
             raise "\nERROR: Invalid Notebook Page In SetPageTextFont: (" + str(nPage) + ")"
         
         if font is None:
-            font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
 
-        normalfont = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        normalfont = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         
         self._pages[nPage]._font = font
 
@@ -1679,9 +1681,9 @@ class TabCtrl(wx.PyControl):
             newheight = oldsize[1]
             
         if self._style & NC_TOP or self._style & NC_BOTTOM:
-            self.SetBestSize((-1, newheight))
+            self.SetInitialSize((-1, newheight))
         else:
-            self.SetBestSize((self._CalcBestWidth(dc), -1))
+            self.SetInitialSize((self._CalcBestWidth(dc), -1))
         self._parent.GetSizer().Layout()
         self._somethingchanged = True
         self._firsttime = True
@@ -1691,7 +1693,7 @@ class TabCtrl(wx.PyControl):
         """ Sets The Tabs Height. """
         
         if self._style & NC_TOP or self._style & NC_BOTTOM:
-            self.SetBestSize((-1, height))
+            self.SetInitialSize((-1, height))
             self._bestsize = height
         
 
@@ -1699,7 +1701,7 @@ class TabCtrl(wx.PyControl):
         """ Sets The TabCtrl Background Colour (Behind The Tabs). """
 
         if colour is None:
-            colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DFACE)
+            colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DFACE)
             
         self.SetBackgroundColour(colour)
         self.Refresh()
@@ -1721,9 +1723,9 @@ class TabCtrl(wx.PyControl):
             raise "\nERROR: Invalid Notebook Page In SetPageTextSecondaryFont: (" + str(nPage) + ")"
         
         if font is None:
-            font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT) 
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
 
-        normalfont = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        normalfont = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         
         self._pages[nPage]._secondaryfont = font
 
@@ -1763,9 +1765,9 @@ class TabCtrl(wx.PyControl):
             newheight = oldsize[-1]
             
         if self._style & NC_TOP or self._style & NC_BOTTOM:
-            self.SetBestSize((-1, newheight))
+            self.SetInitialSize((-1, newheight))
         else:
-            self.SetBestSize((self._CalcBestWidth(dc), -1))
+            self.SetInitialSize((self._CalcBestWidth(dc), -1))
         self._parent.GetSizer().Layout()
         
         self._somethingchanged = True
@@ -1812,7 +1814,7 @@ class TabCtrl(wx.PyControl):
             raise "\nERROR: Invalid Notebook Page In SetPageColour: (" + str(nPage) + ")"
         
         if colour is None:
-            colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+            colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
 
         self._pages[nPage]._pagecolour = colour
         self._somethingchanged = True
@@ -2271,7 +2273,7 @@ class TabCtrl(wx.PyControl):
         posy = self._firsttabpos.y
         maxwidth = max(self._maxtabwidths)
         
-        for ii in xrange(self._firstvisible, self.GetPageCount()):
+        for ii in range(self._firstvisible, self.GetPageCount()):
 
             if not self._enablehiding or not self._pages[ii]._ishidden:
                 
@@ -2445,7 +2447,7 @@ class TabCtrl(wx.PyControl):
             self._imglist2.Add(image2)
 
         if self._style & NC_LEFT or self._style & NC_RIGHT:
-            self.SetBestSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
+            self.SetInitialSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
             self._parent.GetSizer().Layout()
             
         self.Refresh()
@@ -2643,7 +2645,7 @@ class TabCtrl(wx.PyControl):
         somehidden = False
 
         if self._enablehiding:
-            for ii in xrange(nPage):
+            for ii in range(nPage):
                 if self._pages[ii]._ishidden:
                     nPage = nPage - 1
                     somehidden = True
@@ -2945,7 +2947,7 @@ class TabCtrl(wx.PyControl):
             newpages = []
             counter = self.GetPageCount() - 1
             
-            for ii in xrange(self.GetPageCount()):  
+            for ii in range(self.GetPageCount()):
                 newpages.append(self._parent.GetPage(ii))
                 self._parent.bsizer.Detach(counter-ii)
 
@@ -3110,7 +3112,7 @@ class TabCtrl(wx.PyControl):
             if not self._tabstyle._normal or self._usegradients:
                 colour = wx.Colour(145, 167, 180)
             else:
-                colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW)
+                colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
 
         if not self._tabstyle._normal or self._usegradients:
             self._highlightpen = wx.Pen(colour)
@@ -3149,7 +3151,7 @@ class TabCtrl(wx.PyControl):
 
         index = 0
         
-        for ii in xrange(0, endrange, 2):
+        for ii in range(0, endrange, 2):
             if index%2 == 0:
                 colour = colour1
             else:
@@ -3179,11 +3181,11 @@ class TabCtrl(wx.PyControl):
         x, y, w, h = rect
         
         if self._style & NC_ROTATE and self._style & NC_RIGHT:
-            bandrange = xrange(13, -1, -1)
+            bandrange = range(13, -1, -1)
             self._lastcolour = kdetheme[13]
             brush = wx.Brush(kdetheme[0], wx.SOLID)
         else:
-            bandrange = xrange(14)
+            bandrange = range(14)
             self._lastcolour = kdetheme[0]
             brush = wx.Brush(kdetheme[13], wx.SOLID)
 
@@ -3241,11 +3243,11 @@ class TabCtrl(wx.PyControl):
         
         if self._style & NC_ROTATE:
             if self._style & NC_RIGHT:
-                bandrange = xrange(x+w-2, x, -1)
+                bandrange = range(x+w-2, x, -1)
             else:
-                bandrange = xrange(x+1, x+w-1)
+                bandrange = range(x+1, x+w-1)
         else:
-            bandrange = xrange(y+1, y+h)
+            bandrange = range(y+1, y+h)
         
         for band in bandrange:
             currCol = (int(round(r1 + rf)), int(round(g1 + gf)), int(round(b1 + bf)))
@@ -3346,9 +3348,9 @@ class TabCtrl(wx.PyControl):
         else:
             startrange, endrange = (y, h)
         if self._style & NC_ROTATE and self._style & NC_RIGHT:
-            bandrange = xrange(startrange+endrange, startrange+endrange/2, -1)
+            bandrange = range(startrange+endrange, startrange+endrange/2, -1)
         else:
-            bandrange = xrange(startrange+1, startrange+endrange/2)
+            bandrange = range(startrange+1, startrange+endrange/2)
         
         for band in bandrange:
             currCol = (int(round(r1 + rf)), int(round(g1 + gf)), int(round(b1 + bf)))
@@ -3421,9 +3423,9 @@ class TabCtrl(wx.PyControl):
         counter = 0
 
         if self._style & NC_ROTATE and self._style & NC_RIGHT:
-            bandrange = xrange(startrange+endrange/2, startrange+1, -1)
+            bandrange = range(startrange+endrange/2, startrange+1, -1)
         else:
-            bandrange = xrange(startrange+endrange/2, startrange+endrange)
+            bandrange = range(startrange+endrange/2, startrange+endrange)
         for band in bandrange:
             currCol = (int(round(r1 + rf)), int(round(g1 + gf)), int(round(b1 + bf)))
             dc.SetBrush(wx.Brush(currCol, wx.SOLID))
@@ -3447,9 +3449,9 @@ class TabCtrl(wx.PyControl):
         counter = 0
         
         if self._style & NC_ROTATE:
-            bandrange = xrange(x+1, x+w)
+            bandrange = range(x+1, x+w)
         else:
-            bandrange = xrange(y+1, h+y)
+            bandrange = range(y+1, h+y)
         for band in bandrange:
             if self._style & NC_ROTATE:
                 intens = (230 + 80 * (x-band)/w)
@@ -3513,7 +3515,7 @@ class TabCtrl(wx.PyControl):
 
         counter = 0
         
-        bandrange = xrange(rect.y+1, rect.y + rect.height-1)
+        bandrange = range(rect.y+1, rect.y + rect.height-1)
         lenc = len(bandrange)
         
         for y in bandrange:
@@ -3578,7 +3580,7 @@ class TabCtrl(wx.PyControl):
         rf, gf, bf = 0, 0, 0
         counter = 0
         
-        bandrange = xrange(rect.x + 1, rect.x + rect.width - 1)
+        bandrange = range(rect.x + 1, rect.x + rect.width - 1)
         lenc = len(bandrange)
 
         for x in bandrange:
@@ -3629,7 +3631,7 @@ class TabCtrl(wx.PyControl):
         self._incrtext = []
         minheight = 0
 
-        for ii in xrange(self.GetPageCount()):
+        for ii in range(self.GetPageCount()):
 
             txts = self.GetPageText(ii)
             font1 = self.GetPageTextFont(ii)
@@ -3743,7 +3745,7 @@ class TabCtrl(wx.PyControl):
 
         counter = 0
         
-        for y in xrange(rect.y+1, rect.y + rect.height):
+        for y in range(rect.y+1, rect.y + rect.height):
             currCol = (r1 + rf, g1 + gf, b1 + bf)
                 
             dc.SetBrush(wx.Brush(currCol, wx.SOLID))
@@ -4315,9 +4317,9 @@ class TabCtrl(wx.PyControl):
     
     def _OnStyleChange(self):
         if self._style & NC_TOP or self._style & NC_BOTTOM:
-            self.SetBestSize((-1, newheight))
+            self.SetInitialSize((-1, newheight))
         else:
-            self.SetBestSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
+            self.SetInitialSize((self._CalcBestWidth(wx.ClientDC(self)), -1))
         self._parent.GetSizer().Layout()
         self._somethingchanged = True
         self._firsttime = True
@@ -4384,7 +4386,7 @@ class TabCtrl(wx.PyControl):
         self._tabrect = tabrect
         Xrect = []
         
-        for ii in xrange(self._firstvisible, lastvisible):
+        for ii in range(self._firstvisible, lastvisible):
             if not self._enablehiding or not self._pages[ii]._ishidden:
 
                 oncount = oncount + 1
@@ -4782,7 +4784,7 @@ class NotebookCtrl(wx.Panel):
 
         page.Bind(wx.EVT_CHILD_FOCUS, self.OnFocus)        
 
-        for ii in xrange(self.GetPageCount()):
+        for ii in range(self.GetPageCount()):
             self.bsizer.Show(ii, False)
 
         self.bsizer.Layout()
@@ -4839,7 +4841,7 @@ class NotebookCtrl(wx.Panel):
 
         counter = self.GetPageCount() - 1
         
-        for ii in xrange(self.GetPageCount()):
+        for ii in range(self.GetPageCount()):
             self.bsizer.Detach(counter-ii)
             panels = self.GetPage(counter-ii)
             panels.Destroy()
@@ -5342,7 +5344,7 @@ class NotebookCtrl(wx.Panel):
             raise "\nERROR: Invalid Notebook Page In SetPageTextFont: (" + str(nPage) + ")"
         
         if font is None:
-            font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
 
         self.nb.SetPageTextFont(nPage, font)
         
@@ -5363,7 +5365,7 @@ class NotebookCtrl(wx.Panel):
             raise "\nERROR: Invalid Notebook Page In SetPageTextSecondaryFont: (" + str(nPage) + ")"
         
         if font is None:
-            font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT) 
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
 
         self.nb.SetPageTextSecondaryFont(nPage, font)
 
@@ -5405,7 +5407,7 @@ class NotebookCtrl(wx.Panel):
             raise "\nERROR: Invalid Notebook Page In SetPageColour: (" + str(nPage) + ")"
         
         if colour is None:
-            colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_BTNFACE)
+            colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
 
         self.nb.SetPageColour(nPage, colour)
 
@@ -5432,7 +5434,7 @@ class NotebookCtrl(wx.Panel):
         """ Sets The TabCtrl Background Colour (Behind The Tabs). """
 
         if colour is None:
-            colour = wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DFACE)
+            colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DFACE)
             
         self.nb.SetBackgroundColour(colour)
         
@@ -5477,7 +5479,7 @@ class NotebookCtrl(wx.Panel):
         if orient is not None and show:
             origorient = self.bsizer.GetOrientation()
             if origorient != norient:
-                for ii in xrange(self.GetPageCount()-1, -1, -1):
+                for ii in range(self.GetPageCount()-1, -1, -1):
                     self.bsizer.Detach(ii)
 
                 self.sizer.Detach(self.bsizer)
@@ -5485,7 +5487,7 @@ class NotebookCtrl(wx.Panel):
                     
                 self.bsizer = wx.BoxSizer(norient)
                 
-                for ii in xrange(self.GetPageCount()):
+                for ii in range(self.GetPageCount()):
                     self.bsizer.Add(self._notebookpages[ii], 1, wx.EXPAND | wx.ALL, 2)
 
                 if self._style & NC_TOP:
@@ -5502,13 +5504,13 @@ class NotebookCtrl(wx.Panel):
             self._ShowTabCtrl(False)
             if self._style & NC_TOP or self._style & NC_LEFT:
                 if len(self.nb._selectedtabs) > 0:
-                    for ii in xrange(self.GetPageCount()):
+                    for ii in range(self.GetPageCount()):
                         if ii in self.nb._selectedtabs:
                             self.bsizer.Show(ii, True)
                         else:
                             self.bsizer.Show(ii, False)
                 else:
-                    for ii in xrange(self.GetPageCount()):
+                    for ii in range(self.GetPageCount()):
                         if self.IsPageEnabled(ii):
                             if not self.nb._enablehiding or not self.nb._pages[ii]._ishidden:
                                 self.bsizer.Show(ii, True)
@@ -5518,11 +5520,11 @@ class NotebookCtrl(wx.Panel):
                             self.bsizer.Show(ii, False)
             else:
                 if len(self.nb._selectedtabs) > 0:
-                    for ii in xrange(self.GetPageCount()):
+                    for ii in range(self.GetPageCount()):
                         if ii in self.nb._selectedtabs:
                             self.bsizer.Show(ii, True)
                 else:
-                    for ii in xrange(self.GetPageCount()):
+                    for ii in range(self.GetPageCount()):
                         if self.IsPageEnabled(ii):
                             if not self.nb._enablehiding or not self.nb._pages[ii]._ishidden:
                                 self.bsizer.Show(ii, True)
@@ -5533,10 +5535,10 @@ class NotebookCtrl(wx.Panel):
         else:
             self._ShowTabCtrl(True)
             if self._style & NC_TOP or self._style & NC_LEFT:
-                for ii in xrange(self.GetPageCount()):
+                for ii in range(self.GetPageCount()):
                     self.bsizer.Show(ii, False)
             else:
-                for ii in xrange(self.GetPageCount()):
+                for ii in range(self.GetPageCount()):
                     self.bsizer.Show(ii, False)
 
             if selection < 0:
@@ -6116,4 +6118,3 @@ class NotebookCtrlWindowHandler(xrc.XmlResourceHandler):
         window.SetHighlightSelection(self._GetIntParamValue("highlight", 0) != 0)
         window.SetUseFocusIndicator(self._GetIntParamValue("focus", 1) != 0)
         window.SetCustomPage(self._GetCustomPage(window))
-        

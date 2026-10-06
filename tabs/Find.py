@@ -69,7 +69,7 @@ class wxgPanel(wx.Panel):
         sizerFGfields.Add(self.find, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         sizer_2.Add(self.clear, 0, wx.ALIGN_CENTER_VERTICAL|wx.FIXED_MINSIZE, 0)
         sizer_2.Add(self.label_1, 0, wx.LEFT|wx.ALIGN_CENTER_VERTICAL|wx.ADJUST_MINSIZE, 4)
-        sizer_2.Add(self.pathDepth, 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_2.Add(self.pathDepth, 0, wx.EXPAND, 0)
         sizerFGfields.Add(sizer_2, 1, wx.EXPAND, 0)
         sizerFGfields.Add(self.patternLabel, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         sizerFGfields.Add(self.pattern, 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
@@ -98,7 +98,7 @@ class wxgPanel(wx.Panel):
         # end wxGlade
 
     def onCurrentButton(self, event): # wxGlade: wxgPanel.<event_handler>
-        print "Event handler `onCurrentButton' not implemented"
+        print("Event handler `onCurrentButton' not implemented")
         event.Skip()
 
 # end of class wxgPanel
@@ -576,4 +576,3 @@ class FindReplace(FindReplaceEngine):
 if __name__=='__main__':
     import sm.wxp
     sm.wxp.panelApp(Panel)
-    

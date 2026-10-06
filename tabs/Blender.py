@@ -19,7 +19,7 @@ class wxgPanel(wx.Panel):
         # begin wxGlade: wxgPanel.__init__
         kwds["style"] = wx.TAB_TRAVERSAL
         wx.Panel.__init__(self, *args, **kwds)
-        self.logo = wx.StaticBitmap(self, -1, wx.Bitmap("../skins/default/blenpy.png", wx.BITMAP_TYPE_ANY))
+        self.logo = wx.StaticBitmap(self, -1, self.bitmap("../skins/default/blenpy.png", wx.BITMAP_TYPE_ANY))
         self.modules = wx.ListBox(self, -1, choices=["Blender", "Armatures", "BezTriples", "Cameras", "Curves", "Effects", "Groups", "Images", "Ipos",              "Keys", "Lamps", "Lattices", "Materials", "Meshes", "Metaballs", "NMeshes", "Objects", "Registry", "Scenes", "Sounds", "Texts", "Text3ds", "Textures", "Worlds"], style=wx.LB_SINGLE)
         self.filling = wx.StaticText(self, -1, "Only available when Spe is launched from Blender. How? Open the file _spe/spe.blend and press Alt+P in the lower right text window.\n\nBlender is a free 3d modeller, renderer and animation program with a Python scripting engine (http://www.blender.org).")
 
@@ -58,7 +58,7 @@ import _spe.help
 class Panel(wxgPanel):
     #---constructors
     def __init__(self, panel, *args, **kwds):
-        wx.Bitmap       = panel.app.bitmap
+        self.bitmap     = panel.app.bitmap
         self.Blender    = panel.Blender
         wxgPanel.__init__(self, parent=panel,id=-1)
         self.update()

@@ -14,11 +14,6 @@ INFO['description'] =\
 __doc__=INFO['doc']%INFO
 #_______________________________________________________________________________
 
-try:
-    True
-except NameError:
-    True = 1==1
-    False = 1==0
 #===Constants==================================================================
 MODULE_ERROR="Error: Module(s) %s required, but not installed (%s)!"
 WXPYTHON_URL="www.wxpython.org"
@@ -32,7 +27,7 @@ from wx.py import crust,shell, filling
 
 #---Dialogs
 class FileDir:
-    def getFile(self,control, style = wx.OPEN|wx.DD_NEW_DIR_BUTTON):
+    def getFile(self,control, style = wx.FD_OPEN|wx.DD_NEW_DIR_BUTTON):
         default = control.GetValue()
         if not default:
             default        = "D:\\"
@@ -67,7 +62,7 @@ def fileDialog(defaultPath='',defaultFile='',message='www.stani.be',
 ##    if changeDir:       style|=wx.CHANGE_DIR 
     dlg=wx.FileDialog(None, message = message, defaultDir = defaultPath,
         defaultFile = defaultFile, wildcard = wildcard, style = style)
-    print dlg.ShowModal
+    print(dlg.ShowModal)
     if dlg.ShowModal() == wx.ID_OK:path=dlg.GetFileName()
     else:path=''
     dlg.Destroy()
@@ -145,7 +140,7 @@ class SmCrust(crust.Crust):
     """Crust Crust based on wxSplitterWindow."""
 
     name = 'SmCrust Crust'
-    revision = crust.__revision__
+    revision = getattr(crust, '__revision__', '')
 
     def __init__(self, parent, id=-1, pos=wx.DefaultPosition, 
                  size=wx.DefaultSize, style=wx.SP_3D,
@@ -231,7 +226,7 @@ class SmCrustFrame(crust.CrustFrame):
     """Frame containing all the PyCrust components."""
     
     name = 'PyCrust Frame'
-    revision = crust.__revision__
+    revision = getattr(crust, '__revision__', '')
 
     def __init__(self, parent=None, id=-1, title='PyCrust tweaked by www.stani.be', 
                  pos=wx.DefaultPosition, size=wx.DefaultSize, 

@@ -1,7 +1,7 @@
 """Panel to execute scripts and redirect their output for SPE"""
 
 import os, re
-from cgi import escape
+from html import escape
 import wx
 import wx.stc as wx_stc
 import  wx.html as  html
@@ -86,7 +86,7 @@ class Output(html.HtmlWindow):
         """Add text and in case of error, colour red and provide links."""
         text        = text.replace('\r\n','\n').replace("<string>","&lt;string&gt;")
         if error:
-            text    = escape(text)
+            text    = escape(text, quote=False)
             text    = RE_LINK.sub(r"\g<1><img src='%s'>&nbsp;<a href='\g<2>'>\g<2></a><br>"%FIND_ICON,text)
             text    = '<font color=red>%s</font>'%text
         text        = text.replace('\n','<br>')
@@ -94,7 +94,7 @@ class Output(html.HtmlWindow):
         self.Scroll(0,self.GetVirtualSize()[1]/self.GetScrollPixelsPerUnit()[1])
 
     def SetStatusText(self,text):
-        print text
+        print(text)
         
     def UpdateToolbar(self):
         #print 'Updating toolbar...'
@@ -120,7 +120,7 @@ class Output(html.HtmlWindow):
     def OnIdle(self, event):
             if self.inputstream.CanRead():
                 text = self.inputstream.read()
-                self.AddText(escape(text).replace(' ','&nbsp;').replace('\t','&nbsp;'))
+                self.AddText(escape(text, quote=False).replace(' ','&nbsp;').replace('\t','&nbsp;'))
             if self.errorstream.CanRead():
                 text = self.errorstream.read()
                 self.AddText(text,error=True)
@@ -152,11 +152,11 @@ class Output(html.HtmlWindow):
             lineno      = int(match.group(2))
             self.OpenFile(fileName,lineno-1)
             self.SetStatusText('Jumped to file "%s" (line %s).'%(fileName,lineno))
-        except Exception, message:
+        except Exception as message:
             self.SetStatusText('SPE could not locate source file. (%s)'%message)
 
     def OpenFile(self,fileName,lineno):
-        print fileName,lineno
+        print(fileName,lineno)
         
 def Write(self,*args,**keyw):
     wx.OutputStream.Write(self,*args,**keyw)
@@ -195,5 +195,5 @@ def test():
     app.MainLoop()
         
 if __name__ == '__main__':
-    print "<hello world>"
-    print "             hello world"
+    print("<hello world>")
+    print("             hello world")

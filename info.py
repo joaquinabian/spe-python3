@@ -167,9 +167,10 @@ try:
 ##    if INFO['wxVersionC']!=INFO['wxVersion']:
 ##        print '\nSpe Warning: Spe was developped on wxPython v%s, but v%s was found.'%(INFO['wxVersion'],INFO['wxVersionC'])
 ##        print 'If you experience any problems please install wxPython v%s\n'%INFO['wxVersion']
-    INFO['encoding']    = wx.GetDefaultPyEncoding()
+    #Keep the existing Phoenix default as SPE metadata, not a wx global codec.
+    INFO['encoding']    = 'utf-8'
     WX_ERROR = False
-except ImportError, message:
-    print "Spe Error: Please install the right version of wxPython: %s"%INFO['wxVersion']
-    print message
+except ImportError as message:
+    print("Spe Error: Please install the right version of wxPython: %s"%INFO['wxVersion'])
+    print(message)
     WX_ERROR = True

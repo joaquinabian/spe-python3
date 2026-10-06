@@ -24,8 +24,8 @@ class wxgPanel(wx.Panel):
         wx.Panel.__init__(self, *args, **kwds)
         self.split = wx.SplitterWindow(self, -1)
         self.sideBar = wx.Panel(self.split, -1)
-        self.folderNew = wx.BitmapButton(self.sideBar, -1, wx.Bitmap("folder_new.png", wx.BITMAP_TYPE_ANY))
-        self.folderDelete = wx.BitmapButton(self.sideBar, -1, wx.Bitmap("folder_delete.png", wx.BITMAP_TYPE_ANY))
+        self.folderNew = wx.BitmapButton(self.sideBar, -1, self.bitmap("folder_new.png", wx.BITMAP_TYPE_ANY))
+        self.folderDelete = wx.BitmapButton(self.sideBar, -1, self.bitmap("folder_delete.png", wx.BITMAP_TYPE_ANY))
         self.depthLabel = wx.StaticText(self.sideBar, -1, "Depth")
         self.depth = wx.SpinCtrl(self.sideBar, -1, "0", min=0, max=100)
         self.folderList = wx.ListBox(self.sideBar, -1, choices=["Current folder"])
@@ -81,12 +81,12 @@ class Panel(wxgPanel):
     #---constructors
     def __init__(self, panel, *args, **kwds):
         """Arguments come from the parent frame."""
-        wx.Bitmap           = panel.app.bitmap
+        self.bitmap         = panel.app.bitmap
         wx.LC_LIST          = panel.LIST_STYLE
         wxgPanel.__init__(self, parent=panel, id=-1)
         self.panel          = panel
         self.imageList      = wx.ImageList(16,16)
-        self.pyIcon         = self.imageList.Add(wx.Bitmap('source_py.png'))
+        self.pyIcon         = self.imageList.Add(self.bitmap('source_py.png'))
         self.fileList.SetImageList(self.imageList, wx.IMAGE_LIST_SMALL)
         self.split.SetMinimumPaneSize(1)
         self.SetDropTarget(DropAdd(self.add))
@@ -122,7 +122,7 @@ class Panel(wxgPanel):
         if folder == 'Current folder':
             folder = self.getCurrentFolder()
         
-        print "-----name : ", folder
+        print("-----name : ", folder)
         dlg = wx.DirDialog(self,defaultPath=folder )        
         if dlg.ShowModal() == wx.ID_OK:
             dir = dlg.GetPath()
@@ -145,7 +145,7 @@ class Panel(wxgPanel):
         recursion=self.depth.GetValue()
         folder=event.GetString()
         
-        print "this is the value of folder here : ",folder
+        print("this is the value of folder here : ",folder)
         if folder == 'Current folder':
             folder = self.getCurrentFolder()
             self.add(folder)
@@ -223,4 +223,3 @@ class DropAdd(wx.FileDropTarget):
             self.add(fileNames)
             return 1
         else: return 0
-        

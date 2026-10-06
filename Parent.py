@@ -10,12 +10,15 @@ __doc__=INFO['doc']%INFO
 ####Importing modules-----------------------------------------------------------
 
 #---general modules
-import ConfigParser,os,string,sys,thread,time,types,webbrowser, pprint
+import configparser as ConfigParser
+import _thread as thread
+import os,string,sys,time,types,webbrowser, pprint
 import _spe,sm.scriptutils,sm.wxp
 import dialogs.stcStyleEditor
 
 #---wxPython
 import wx
+import wx.adv
 import wx.stc
 from wx.lib.evtmgr import eventManager
 
@@ -89,7 +92,7 @@ class Panel(wx.Notebook):
             os.mkdir(INFO['userPath'])
         except:
             if not os.path.exists(INFO['userPath']):
-                print 'Warning: could not find or create user path (%s).'%INFO['userPath']
+                print('Warning: could not find or create user path (%s).'%INFO['userPath'])
 
     def __settings__(self,openFiles,redirect,redraw=None,Blender=None,**kwds):
         #arguments
@@ -119,11 +122,11 @@ class Panel(wx.Notebook):
         self.findFlags=1
         self.stcFindFlags=0
         #This can't be done with the eventManager unfortunately ;-(
-        wx.EVT_COMMAND_FIND(self,-1,self.onFind)
-        wx.EVT_COMMAND_FIND_NEXT(self, -1,self.onFind)
-        wx.EVT_COMMAND_FIND_REPLACE(self, -1,self.onReplace)
-        wx.EVT_COMMAND_FIND_REPLACE_ALL(self, -1,self.onReplaceAll)
-        wx.EVT_COMMAND_FIND_CLOSE(self, -1,self.onFindClose)
+        self.Bind(wx.EVT_FIND, self.onFind)
+        self.Bind(wx.EVT_FIND_NEXT, self.onFind)
+        self.Bind(wx.EVT_FIND_REPLACE, self.onReplace)
+        self.Bind(wx.EVT_FIND_REPLACE_ALL, self.onReplaceAll)
+        self.Bind(wx.EVT_FIND_CLOSE, self.onFindClose)
 
     #---finish
     def __finish__(self):
@@ -144,7 +147,7 @@ class Panel(wx.Notebook):
                 self.iconsListIndex[icon]=self.iconsList.Add(self.icons[icon])
 
     def __sash__(self):
-        if self.app.DEBUG: print 'Creating tabs...'
+        if self.app.DEBUG: print('Creating tabs...')
         self.config = self.app.config
         self.AssignImageList(self.iconsList)
         tabs = [os.path.splitext(x)[0] for x in sm.osx.listdir(self.pathTabs,extensions=['.py']) if x[:1]!='_']
@@ -154,7 +157,7 @@ class Panel(wx.Notebook):
             tabs.remove('Blender')
         self.tabPanel = {}
         for tab in tabs:
-            if self.app.DEBUG: print '\t',tab
+            if self.app.DEBUG: print('\t',tab)
             __import__('_spe.tabs.'+tab)
             page = self.__dict__[tab.lower()] = eval('_spe.tabs.%s.Panel'%tab)(self)
             if info.DARWIN and tab!='Shell':    text    = ''
@@ -281,7 +284,7 @@ class Panel(wx.Notebook):
                 openFiles=eval(self.getWorkspaceValue("OpenFiles"))
                 for i in openFiles:
                     self.workspace['openfiles'].append(i[0])
-            except Exception,e:
+            except Exception as e:
                 if self.app.DEBUG:
                     self.SetStatusText("Error opening workspace file %s: %s"%(file,e))
         else:
@@ -293,8 +296,8 @@ class Panel(wx.Notebook):
         if not (self.frame.dead or child.frame.dead):
             try:
                 child.frame.setTitle(self.name,colour=wx.WHITE)
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
 
     def loadWorkspace(self):
         try:
@@ -388,9 +391,9 @@ class Panel(wx.Notebook):
                 file.close()
                 self.workspace['file']=filelocation
                 self.setWorkspaceStatusBarText(filelocation)
-            except Exception, message:
-                print 'Spe warning: could not save workspace options in',filelocation
-                print message
+            except Exception as message:
+                print('Spe warning: could not save workspace options in',filelocation)
+                print(message)
             self.applyWorkspaceTab(childActive)
 
     def getWorkspaceValue(self,type,default=False):
@@ -456,7 +459,7 @@ class Panel(wx.Notebook):
                 self.set("currentworkspace",file)
                 self.__openWorkspace__()
                 self.loadWorkspace()
-            except Exception,e:
+            except Exception as e:
                 self.message("Could not open workspace:%s\n%s"%(file,e))
         dlg.Destroy()
 
@@ -464,7 +467,7 @@ class Panel(wx.Notebook):
         """Save file dialog."""
         try:
             self.saveWorkspace()
-        except Exception,e:
+        except Exception as e:
             self.message("Could not save workspace:%s\n%s"%(file,e))
 
     def save_workspace_as(self):
@@ -485,7 +488,7 @@ class Panel(wx.Notebook):
             try:
                 self.set("currentworkspace",file)
                 self.saveWorkspace(file)
-            except Exception,e:
+            except Exception as e:
                 self.message("Could not save workspace:%s\n%s"%(file,e))
         dlg.Destroy()
 
@@ -688,7 +691,7 @@ class Panel(wx.Notebook):
                 frame.sash.SetDefaultSize(wx.Size(1000,200))
             else:
                 frame.sash.SetDefaultSize(wx.Size(1000,1))
-            wx.LayoutAlgorithm().LayoutMDIFrame(frame)
+            wx.adv.LayoutAlgorithm().LayoutMDIFrame(frame)
         elif hasattr(frame,'panelFrame'):
             frame.panelFrame.Show(show)
             frame.panelFrame.Activate()
@@ -706,7 +709,7 @@ class Panel(wx.Notebook):
 ##                frame.sash.SetDefaultSize(wx.Size(1000,200))
 ##            else:
 ##                frame.sash.SetDefaultSize(wx.Size(1000,1))
-##            wx.LayoutAlgorithm().LayoutMDIFrame(frame)
+##            wx.adv.LayoutAlgorithm().LayoutMDIFrame(frame)
 
     #---Tools
     def browse_folder(self):
@@ -999,7 +1002,7 @@ class Panel(wx.Notebook):
                 fileName, lineno, col = fileName
             if not os.path.exists(fileName): continue
             if self.app.DEBUG:
-                print 'Opening %s'%fileName
+                print('Opening %s'%fileName)
             child=self.getChildByFileName(fileName)
             if child:
                 #opened already
@@ -1041,8 +1044,8 @@ class Panel(wx.Notebook):
             runCommand      = 'sm.scriptutils.run(fileName=r"%s",source=%s,mainDict=%s,profiling=%s)'\
                 %(fileName,source,nameSpace,profiling)
             self.shell.interp.push(runCommand)
-        except Exception,message:
-            print '\n(Spe internal warning: %s!)'%message
+        except Exception as message:
+            print('\n(Spe internal warning: %s!)'%message)
         self.shell.prompt()
         if self.redraw:self.redraw()
         self.activateShell()
@@ -1060,7 +1063,7 @@ class Panel(wx.Notebook):
     def onActivate(self,event):
         """Check and update, if files are changed when parent frame is activated."""
         if self.app.DEBUG:
-            print 'Event:  Parent: %s.onActivate'%self.__class__
+            print('Event:  Parent: %s.onActivate'%self.__class__)
         if not self.timer.IsRunning():
             #self.Bind(wx.EVT_IDLE,self.onIdle)
             self.Bind(wx.EVT_TIMER,self.onTimer)
@@ -1072,9 +1075,9 @@ class Panel(wx.Notebook):
                     reloaded.append(os.path.basename(child.fileName))
             if reloaded: self.SetStatusText('Reloaded %s'%','.join(reloaded),1)
             if event: event.Skip()
-        except Exception,m:
+        except Exception as m:
             if self.app.DEBUG:
-                print 'Warning: Parent: %s.onActivate failed\n%s\n%s\n'%(self.__class__,Exception,m)
+                print('Warning: Parent: %s.onActivate failed\n%s\n%s\n'%(self.__class__,Exception,m))
                 
     def onDeactivate(self,event=None):
         if self.app.children:
@@ -1091,7 +1094,7 @@ class Panel(wx.Notebook):
     def onClose(self,event=None):
         """Called when the parent frame is closed."""
         if self.app.DEBUG:
-            print 'Event:  Parent: %s.onClose'%self.__class__
+            print('Event:  Parent: %s.onClose'%self.__class__)
         for child in self.app.children:
             if not child.confirmSave():
                 child.Raise()
@@ -1125,7 +1128,7 @@ class Panel(wx.Notebook):
                 self.saveWorkspace()
             if self.remember:
                 self.saveWorkspace(INFO['defaultWorkspace'])
-        except Exception, message:
+        except Exception as message:
             self.messageEmail("""\
 Spe Warning: can't save user settings (%s).
 Please report these details and operating system to %s."""%(message,INFO['author_email']))
@@ -1153,13 +1156,13 @@ Please report these details and operating system to %s."""%(message,INFO['author
     def onMove(self,event=None):
         """Called when the parent frame is moved."""
         if self.app.DEBUG:
-            print 'Event:  Parent: %s.onMove'%self.__class__
+            print('Event:  Parent: %s.onMove'%self.__class__)
         if self.redraw:self.redraw()
 
     def onSize(self,event=None):
         """Called when the parent frame is resized."""
         if self.app.DEBUG:
-            print 'Event:  Parent: %s.onSize'%self.__class__
+            print('Event:  Parent: %s.onSize'%self.__class__)
         if self.redraw:self.redraw()
 
     #---extra
@@ -1422,7 +1425,7 @@ Please report these details and operating system to %s."""%(message,INFO['author
     def messageCancel(self,message):
         """Show a yes,no or cancel message"""
         if self.app.DEBUG:
-            print 'Dialog: Parent: %s.messageCancel'%self.__class__
+            print('Dialog: Parent: %s.messageCancel'%self.__class__)
         return self.message(message,style=wx.YES_NO|wx.ICON_QUESTION | wx.CANCEL)
 
     def messageError(self,message):
@@ -1470,9 +1473,9 @@ Please report these details and operating system to %s."""%(message,INFO['author
             defaults=open(INFO['defaultsUser'],'w')
             self.config.write(defaults)
             defaults.close()
-        except Exception, message:
-            print 'Spe warning: could not save user options in',INFO['defaultsUser']
-            print message
+        except Exception as message:
+            print('Spe warning: could not save user options in',INFO['defaultsUser'])
+            print(message)
 
     def preferencesUpdate(self):
         if self.frame.dead: return
@@ -1494,10 +1497,6 @@ Please report these details and operating system to %s."""%(message,INFO['author
         encoding                = self.get('Encoding').split(',')[0].split(' ')[0]
         if encoding!=self.defaultEncoding:
             self.defaultEncoding = encoding
-            if encoding=='<default>':
-                wx.SetDefaultPyEncoding(INFO['encoding'])
-            else:
-                wx.SetDefaultPyEncoding(encoding)
         #restart
         if restart!=self.restartMessage:
             self.restartMessage = restart
@@ -1513,5 +1512,3 @@ Please report these details and operating system to %s."""%(message,INFO['author
 
     def getValue(self,name):
         return eval(self.config.get('Default',name))
-
-

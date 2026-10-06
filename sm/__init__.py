@@ -30,7 +30,7 @@ copyright."""%INFO
 
 __doc__=INFO['doc']%INFO
 
-from python import *
+from .python import *
 
 def initHtml():
     """Initializes html and css components of the sm library.
@@ -68,7 +68,7 @@ def ChangeDisplaySettings(xres=None, yres=None, BitsPerPixel=None):
     DevModeData += struct.calcsize("l9h32BHL") * '\x00'
     DevModeData += struct.pack("LLL", BitsPerPixel or 0, xres or 0, yres or 0)
     DevModeData += struct.calcsize("8L") * '\x00'
-    print dir(user32)
+    print(dir(user32))
     result = user32.ChangeDisplaySettingsA(DevModeData, CDS_FULLSCREEN)
     return result == 0 # success if zero, some failure otherwise
     

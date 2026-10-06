@@ -9,7 +9,8 @@ INFO['description']=\
 __doc__=INFO['doc']%INFO
 
 ####Modules---------------------------------------------------------------------
-import codecs, compiler, inspect, os, sys, re, shutil, thread, time, types
+import _thread as thread
+import ast, codecs, inspect, os, sys, re, shutil, time, types
 
 import wx
 from wx.lib.evtmgr import eventManager
@@ -26,7 +27,7 @@ from sidebar.Browser import Browser
 
 ####Constants-------------------------------------------------------------------
 DEFAULT                 = "<default>"
-MAXINT                  = sys.maxint #for ListCtrl (should be long)
+MAXINT                  = sys.maxsize #for ListCtrl (should be long)
 NEWFILE                 = 'unnamed'
 SPE_ALLOWED_EXTENSIONS  = ['.py','.pyw','.tpy','.txt','.htm','.html','.bak']
 STYLE_LIST              = wx.LC_REPORT
@@ -293,13 +294,7 @@ class Panel(wx.SplitterWindow):
         else:
             #get & fix source
             self.source.assertEOL()
-            if self.encoding:
-                previous        = wx.GetDefaultPyEncoding()
-                wx.SetDefaultPyEncoding(self.encoding)
-                source          = self.source.GetText()
-                wx.SetDefaultPyEncoding(previous)
-            else:
-                source          = self.source.GetText()
+            source              = self.source.GetText()
             if self.parentPanel.getValue('StripTrailingSpaces'):
                 source          = '\n'.join([l.rstrip() for l in source.split('\n')])
             if not self.dosLines:
@@ -308,16 +303,13 @@ class Panel(wx.SplitterWindow):
 
             #get encoding
             self.getEncoding(source)
-            #convert source to unicode
-            if type(source) is types.UnicodeType:
-                sourceUnicode   = source
-            else:
-                sourceUnicode   = source.decode(self.encoding)
+            #Phoenix returns Unicode text; encoding happens at the file boundary.
+            sourceUnicode       = source
 
             #check if source can be encoded, to avoid overwriting with empty file
             try:
                 sourceUnicode.encode(self.encoding)
-            except Exception, message:
+            except Exception as message:
                 self.parentPanel.messageError(\
 """Error: SPE is unable to save with "%s" encoding:
 
@@ -348,7 +340,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
                 file        = codecs.open(self.fileName,'wb',self.encoding)
                 file.write(sourceUnicode)
                 file.close()
-            except Exception, message:
+            except Exception as message:
                 #This is a serious bug (user looses its file) if it would happen
                 self.parentPanel.messageError(\
 """Fatal Error: SPE is unable to save with "%s" encoding:
@@ -749,7 +741,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
 
     def onSetSourceFocus(self,event):
         if self.app.DEBUG:
-            print 'Event:  Child: %s: %s.onSetFocus(dead=%s)'%(self.fileName, self.__class__,self.frame.dead)
+            print('Event:  Child: %s: %s.onSetFocus(dead=%s)'%(self.fileName, self.__class__,self.frame.dead))
         event.Skip()
         if self.app.children and self.app.childActive != self and sm.wxp.smdi.MdiSplitChildFrame == self.frame.__class__:
             self.frame.onFrameActivate()
@@ -793,26 +785,23 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
         lock.acquire()
         try:
             self._idleCheck(source)
-        except Exception, message:
+        except Exception as message:
             pass
         lock.release()
 
     def _idleCheck(self,source):
         length          = len(source)
         source          = source.replace('\r\n','\n') + '\n'
+        e               = None
         try:
-            tree        = compiler.parse(source)
+            ast.parse(source)
             warning     = ''
-            e           = None
-        except Exception, e:
-            if hasattr(e,'text'):
-                if type(e.text) in types.StringTypes:
-                    text= e.text.strip()
-                else:
-                    text= ''
-                warning = '%s: %s at line %s, col %s.'%(self.name,e.msg,e.lineno,e.offset)
-            else:
-                warning = repr(e)
+        except SyntaxError as error:
+            e           = error
+            warning = '%s: %s at line %s, col %s.'%(self.name,e.msg,e.lineno,e.offset)
+        except Exception as error:
+            e           = error
+            warning     = repr(e)
         if warning  != self.warning:
             #todo: how to implement indicators?!!
             if warning:
@@ -824,14 +813,14 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
             else:
                 wx.CallAfter(self.setStatus,STATUS)
                 wx.CallAfter(self.statusBar.throbber.stop)
-                if self.e and hasattr(self.e,'lineno'):
+                if getattr(self, 'e', None) and hasattr(self.e,'lineno'):
                     wx.CallAfter(self.source.clearError,length)
             self.warning = warning
-            self.e       = e
+        self.e           = e
 
     def onKillFocus(self,event=None):
         if self.app.DEBUG:
-            print 'Event:  Child: %s: %s.onKillFocus(dead=%s)'%(self.fileName, self.__class__,self.frame.dead)
+            print('Event:  Child: %s: %s.onKillFocus(dead=%s)'%(self.fileName, self.__class__,self.frame.dead))
         try:
             if not (self.frame.dead or self.parentFrame.dead):
                 if hasattr(self.parentFrame,'tabs'):
@@ -1267,7 +1256,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
 
     def refreshTitle(self):
         if self.app.DEBUG:
-            print 'Method: Child: %s.refreshTitle("%s")'%(self.__class__,self.fileName)
+            print('Method: Child: %s.refreshTitle("%s")'%(self.__class__,self.fileName))
         self.frame.setTitle()
 
     def revert(self,source=None):
@@ -1287,14 +1276,11 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
                 sourceFile      = codecs.open(self.fileName,'rb',self.encoding)
                 source          = sourceFile.read()
                 sourceFile.close()
-                #set it with the right encoding
-                previous        = wx.GetDefaultPyEncoding()
-                wx.SetDefaultPyEncoding(self.encoding)
+                #Pass decoded Unicode text to Phoenix.
                 self.source.SetText(source)
-                wx.SetDefaultPyEncoding(previous)
             else:
                 self.source.SetText(source)
-        except Exception, message:
+        except Exception as message:
             self.SetStatusText("Unicode Error for '%s' (%s)"%(self.fileName, message),1)
         self.source.assertEOL()
         if os.path.exists(self.fileName) and self.fileName != NEWFILE:
@@ -1370,7 +1356,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
         if isUtf8(source):
             self.encoding = "utf8"
             return
-        first2lines         = "".join(source.split("\n")[:2])
+        first2lines         = "\n".join(source.split("\n")[:2])
         encode_hit          = RE_ENCODING.search(first2lines)
         if encode_hit:
             #find in source
@@ -1378,7 +1364,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
         else:
             #get default values
             if self.parentPanel.defaultEncoding == '<default>':
-                #wx.GetDefaultPyEncoding() when SPE was launched
+                #SPE's application default when no file declaration is present.
                 self.encoding   = INFO['encoding']
             else:
                 #as in preferences

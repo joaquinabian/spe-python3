@@ -12,7 +12,7 @@
 #Boa:Dialog:STCStyleEditDlg
 
 import os, string, pprint, copy
-import ConfigParser
+import configparser as ConfigParser
 
 import wx
 from wx.lib.anchors import LayoutAnchors
@@ -433,7 +433,7 @@ class STCStyleEditDlg(wx.Dialog):
         try:
             self.updateStyle()
             return True
-        except KeyError, errkey:
+        except KeyError as errkey:
             wx.LogError('Name not found in Common definition, '\
                 'please enter valid reference. (%s)'%errkey)
             self.restoreStyles(oldstyle)
@@ -896,7 +896,7 @@ class STCStyleEditDlg(wx.Dialog):
                 self.commonDefs = answer
                 try:
                     self.setStyles()
-                except KeyError, badkey:
+                except KeyError as badkey:
                     wx.LogError(str(badkey)+' not defined but required, \n'\
                           'reverting to previous common definition')
                     self.commonDefs = oldDefs
@@ -991,7 +991,7 @@ def colToStr(col):
 
 def writeProp(num, style):
     if num >= 0:
-        return 'style.%s='%(string.zfill(`num`, 3)) + style
+        return 'style.%s='%(string.zfill(repr(num), 3)) + style
     else:
         return 'setting.%d='%(num) + style
 

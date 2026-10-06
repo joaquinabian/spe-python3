@@ -126,7 +126,7 @@ class PrintCanvas(ogl.ShapeCanvas):
         #frame
         ogl.ShapeCanvas.__init__(self, size=(maxWidth,maxHeight), *args, **keyw)
         self.frame = wxTopLevelFrame(self)
-        self.SetScrollbars(20, 20, maxWidth/20, maxHeight/20)
+        self.SetScrollbars(20, 20, maxWidth//20, maxHeight//20)
         #Print data
         self.printSetup = False
         self.printData = wx.PrintData()

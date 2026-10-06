@@ -4,9 +4,9 @@
 try:
     import _spe.info as info
 except:
-    print "SPE path error: the folder of SPE.py should be called '_spe'!"
-    print "(Maybe you renamed it to 'spe', please rename it back to '_spe'.)"
-    print "SPE will exit now."
+    print("SPE path error: the folder of SPE.py should be called '_spe'!")
+    print("(Maybe you renamed it to 'spe', please rename it back to '_spe'.)")
+    print("SPE will exit now.")
     import sys
     sys.exit()
 
@@ -71,43 +71,42 @@ def _(x):
 class Tool(wx.ToolBar):
     def __init__(self,parent=None,app=None,id=-1,menu=None,**kwds):
         self.app = app
-        wx.Bitmap = app.bitmap
         wx.ToolBar.__init__(self,parent=parent,id=id,**kwds)
         self.SetToolBitmapSize((16,16))
         parent.SetToolBar(self)
-        self.AddLabelTool(TOOL_NEW, "", wx.Bitmap("skins/default/filenew.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("New | Ctrl+N"), "")
-        self.AddLabelTool(TOOL_OPEN_FILES, "", wx.Bitmap("skins/default/fileopen.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Open files... | Ctrl+O"), "")
-        self.AddLabelTool(TOOL_SAVE, "", wx.Bitmap("skins/default/filesave.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Save | Ctrl+S"), "")
-        self.AddLabelTool(TOOL_SAVE_AS, "", wx.Bitmap("skins/default/filesaveas.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Save as... | Shift+Ctrl+S"), "")
-        self.AddLabelTool(TOOL_SAVE_WORKSPACE, "", wx.Bitmap("skins/default/workspace_save.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Save workspace"), "")
-        self.AddLabelTool(TOOL_REMEMBER_OPEN_FILES, "", wx.Bitmap("skins/default/remember.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Remember open files"), "")
+        self.AddLabelTool(TOOL_NEW, "", app.bitmap("skins/default/filenew.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("New | Ctrl+N"), "")
+        self.AddLabelTool(TOOL_OPEN_FILES, "", app.bitmap("skins/default/fileopen.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Open files... | Ctrl+O"), "")
+        self.AddLabelTool(TOOL_SAVE, "", app.bitmap("skins/default/filesave.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Save | Ctrl+S"), "")
+        self.AddLabelTool(TOOL_SAVE_AS, "", app.bitmap("skins/default/filesaveas.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Save as... | Shift+Ctrl+S"), "")
+        self.AddLabelTool(TOOL_SAVE_WORKSPACE, "", app.bitmap("skins/default/workspace_save.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Save workspace"), "")
+        self.AddLabelTool(TOOL_REMEMBER_OPEN_FILES, "", app.bitmap("skins/default/remember.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Remember open files"), "")
         self.AddSeparator()
-        self.AddLabelTool(TOOL_UNDO, "", wx.Bitmap("skins/default/undo.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Undo | Ctrl+Z"), "")
-        self.AddLabelTool(TOOL_REDO, "", wx.Bitmap("skins/default/redo.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Redo | Ctrl+Y"), "")
+        self.AddLabelTool(TOOL_UNDO, "", app.bitmap("skins/default/undo.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Undo | Ctrl+Z"), "")
+        self.AddLabelTool(TOOL_REDO, "", app.bitmap("skins/default/redo.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Redo | Ctrl+Y"), "")
         self.AddSeparator()
-        self.AddLabelTool(TOOL_FIND__REPLACE, "", wx.Bitmap("skins/default/viewmag.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Find & replace... | Ctrl+F"), "")
-        self.AddLabelTool(TOOL_GO_TO_LINE, "", wx.Bitmap("skins/default/goto.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Go to line... | Ctrl+G"), "")
-        self.AddLabelTool(TOOL_BROWSE_SOURCE, "", wx.Bitmap("skins/default/thumbnail.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Browse source | Ctrl+Enter"), "")
+        self.AddLabelTool(TOOL_FIND__REPLACE, "", app.bitmap("skins/default/viewmag.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Find & replace... | Ctrl+F"), "")
+        self.AddLabelTool(TOOL_GO_TO_LINE, "", app.bitmap("skins/default/goto.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Go to line... | Ctrl+G"), "")
+        self.AddLabelTool(TOOL_BROWSE_SOURCE, "", app.bitmap("skins/default/thumbnail.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Browse source | Ctrl+Enter"), "")
         self.AddSeparator()
-        self.AddLabelTool(TOOL_INDENT, "", wx.Bitmap("skins/default/indent.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Indent | Tab"), "")
-        self.AddLabelTool(TOOL_DEDENT, "", wx.Bitmap("skins/default/dedent.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Dedent | Shift+Tab"), "")
-        self.AddLabelTool(TOOL_COMMENT, "", wx.Bitmap("skins/default/comment.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Comment | Alt+3"), "")
-        self.AddLabelTool(TOOL_UNCOMMENT, "", wx.Bitmap("skins/default/uncomment.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Uncomment | Alt+4"), "")
+        self.AddLabelTool(TOOL_INDENT, "", app.bitmap("skins/default/indent.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Indent | Tab"), "")
+        self.AddLabelTool(TOOL_DEDENT, "", app.bitmap("skins/default/dedent.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Dedent | Shift+Tab"), "")
+        self.AddLabelTool(TOOL_COMMENT, "", app.bitmap("skins/default/comment.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Comment | Alt+3"), "")
+        self.AddLabelTool(TOOL_UNCOMMENT, "", app.bitmap("skins/default/uncomment.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Uncomment | Alt+4"), "")
         self.AddSeparator()
-        self.AddLabelTool(TOOL_SIDEBAR, "", wx.Bitmap("skins/default/view_left_right.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("View sidebar | F11"), "")
-        self.AddLabelTool(TOOL_SHELL, "", wx.Bitmap("skins/default/view_top_bottom.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Show/hide shell | F12"), "")
+        self.AddLabelTool(TOOL_SIDEBAR, "", app.bitmap("skins/default/view_left_right.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("View sidebar | F11"), "")
+        self.AddLabelTool(TOOL_SHELL, "", app.bitmap("skins/default/view_top_bottom.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Show/hide shell | F12"), "")
         self.AddSeparator()
-        self.AddLabelTool(TOOL_RUN, "", wx.Bitmap("skins/default/run.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Run.../Stop | F9"), "")
-        self.AddLabelTool(TOOL_RUN_DEBUG, "", wx.Bitmap("skins/default/run_debug.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Run/Stop with WinPdb | F9"), "")
-        self.AddLabelTool(TOOL_DEBUG, "", wx.Bitmap("skins/default/debug.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Debug with WinPdb... | Ctrl+Shift+D"), "")
-        self.AddLabelTool(TOOL_IMPORT, "", wx.Bitmap("skins/default/import.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Import | F10"), "")
-        self.AddLabelTool(TOOL_CHECK_SOURCE_WITH_PYCHECKER, "", wx.Bitmap("skins/default/pychecker.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Check source with pychecker | Ctrl+Alt+C"), "")
+        self.AddLabelTool(TOOL_RUN, "", app.bitmap("skins/default/run.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Run.../Stop | F9"), "")
+        self.AddLabelTool(TOOL_RUN_DEBUG, "", app.bitmap("skins/default/run_debug.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_CHECK, _("Run/Stop with WinPdb | F9"), "")
+        self.AddLabelTool(TOOL_DEBUG, "", app.bitmap("skins/default/debug.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Debug with WinPdb... | Ctrl+Shift+D"), "")
+        self.AddLabelTool(TOOL_IMPORT, "", app.bitmap("skins/default/import.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Import | F10"), "")
+        self.AddLabelTool(TOOL_CHECK_SOURCE_WITH_PYCHECKER, "", app.bitmap("skins/default/pychecker.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Check source with pychecker | Ctrl+Alt+C"), "")
         self.AddSeparator()
         if app.Blender:
-            self.AddLabelTool(TOOL_LOAD_IN_BLENDER, "", wx.Bitmap("skins/default/blender.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Load into Blender | Ctrl+B"), "")
-            self.AddLabelTool(TOOL_REFERENCE_IN_BLENDER, "", wx.Bitmap("skins/default/blenderRef.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Reference in Blender | Ctrl+Alt+B"), "")
+            self.AddLabelTool(TOOL_LOAD_IN_BLENDER, "", app.bitmap("skins/default/blender.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Load into Blender | Ctrl+B"), "")
+            self.AddLabelTool(TOOL_REFERENCE_IN_BLENDER, "", app.bitmap("skins/default/blenderRef.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Reference in Blender | Ctrl+Alt+B"), "")
             self.AddSeparator()
-        self.AddLabelTool(TOOL_DONATE, "", wx.Bitmap("skins/default/donate.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Please donate, if you enjoy SPE."), "")
+        self.AddLabelTool(TOOL_DONATE, "", app.bitmap("skins/default/donate.png", wx.BITMAP_TYPE_ANY), wx.NullBitmap, wx.ITEM_NORMAL, _("Please donate, if you enjoy SPE."), "")
         self.Realize()
 
     def __events__(self):
@@ -244,7 +243,7 @@ class Bar(wxgMenu.Bar):
                 self.toolBar = None
                 #self.toolBar.Hide()
         if hasattr(self.frame,'sash'):
-            wx.LayoutAlgorithm().LayoutMDIFrame(frame)
+            wx.adv.LayoutAlgorithm().LayoutMDIFrame(frame)
         else:
             self.frame.Layout()
 
@@ -784,7 +783,7 @@ class Palette(wx.MiniFrame):
     def __init__(self,parent,*args,**keyw):
         wx.MiniFrame.__init__(self,parent,style=wx.CAPTION|wx.FRAME_FLOAT_ON_PARENT,*args,**keyw)
         sizer_main = wx.BoxSizer(wx.VERTICAL)
-        self.panel  = PalettePanel(parent=self,id=wx.ID_ANY)
+        self.panel  = PalettePanel(parent=self,id=wx.ID_ANY,bitmap=parent.app.bitmap)
         sizer_main.Add(self.panel, 0, wx.ADJUST_MINSIZE, 0)
         self.SetAutoLayout(True)
         self.SetSizer(sizer_main)
@@ -795,7 +794,7 @@ class Palette(wx.MiniFrame):
         for child in self.panel.GetChildren()[:-2]:
             child.Enable(status)
 
-from wx.animate import GIFAnimationCtrl
+from wx.adv import AnimationCtrl as GIFAnimationCtrl
 
 class Status(wx.StatusBar):
     def __init__(self,parent=None,id=-1):
@@ -808,14 +807,14 @@ class Status(wx.StatusBar):
 
 class Throbber(GIFAnimationCtrl):
     def __init__(self,statusBar,fileName,position=0):
-        GIFAnimationCtrl.__init__(self,statusBar,-1,info.imageFile(fileName))
+        GIFAnimationCtrl.__init__(self,statusBar,-1)
+        GIFAnimationCtrl.LoadFile(self,info.imageFile(fileName))
         self._statusBar = statusBar
         self._fileName  = fileName
         self._position  = position
         self._running   = False
         #backgroundcolour
-        player          = self.GetPlayer()
-        player.UseBackgroundColour(True)
+        self.SetBackgroundColour(statusBar.GetBackgroundColour())
         #position
         rect            = statusBar.GetFieldRect(0)
         self.SetPosition((rect.x+(rect.width-16)/2, rect.y+(rect.height-16)/2))

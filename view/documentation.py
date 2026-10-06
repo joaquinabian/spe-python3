@@ -56,7 +56,7 @@ save them first before generating any documentation.
                 moduleName      = os.path.splitext(os.path.basename(fileName))[0]
                 if path:          os.chdir(path)
                 self.loadDoc(moduleName,'')
-            except Exception, message:
+            except Exception as message:
                 self.error(moduleName,message)
             
     def OnLinkClicked(self, linkinfo):
@@ -85,7 +85,7 @@ save them first before generating any documentation.
                                 )
                 self.SetPage(doc)
                 self.moduleName = moduleName
-            except Exception, message:
+            except Exception as message:
                 self.error(moduleName,message)
         #jump to anchor
         if anchor:

@@ -40,7 +40,7 @@ class TitleTimer:
             if self.title:
                 self.title.SetLabel(message)
             elif displayTitle: os.system('title "'+message+'"')
-            else: print message
+            else: print(message)
 
 ####FUNCTIONS-------------------------------------------------------------------
 def copydirs(base,to,ignore=[]):
@@ -96,8 +96,8 @@ def copytree(src, dst, symlinks=0,extensions=None,excludePrefixFolders=''):
             else:
                 shutil.copy2(srcname, dstname)
             # XXX What about devices, sockets etc.?
-        except (IOError, os.error), why:
-            print "Can't copy %s to %s: %s" % (`srcname`, `dstname`, str(why))
+        except (IOError, os.error) as why:
+            print("Can't copy %s to %s: %s" % (repr(srcname), repr(dstname), str(why)))
 
 def filterByExtension(fileList,extensions):
     "Filters file list by a list of lowercase extensions."
@@ -199,7 +199,7 @@ def rmtree(p,output=0):
     "Tries to remove a directory tree, otherwise print warning."
     try:shutil.rmtree(p)
     except:
-        if output:print " - Can't remove path",p
+        if output:print(" - Can't remove path",p)
 
 ##def userPath(dirname=''):
 ##    """Improved function to get user path (c) Andrei http://come.to/project5"""
@@ -282,7 +282,7 @@ def registerFileCreate(label, action, fileType='Python.File'):
     except:
         pass
     try:
-        print (key,"command",_winreg.REG_SZ,action+' "%1"')
+        print((key,"command",_winreg.REG_SZ,action+' "%1"'))
         _winreg.SetValue(key,"command",_winreg.REG_SZ,action+' "%1"')
         return 1
     except:
@@ -312,4 +312,4 @@ def registerFileDelete(label, fileType='Python.File'):
 NOT_FILE_CHARS=['\\','/','<','>','"','|','?',':','*']
 
 if __name__=='__main__':
-    print treeDir('c:/temp','PACK')
+    print(treeDir('c:/temp','PACK'))

@@ -20,15 +20,15 @@ except ImportError:
     try:
         import wx
         if wx.VERSION_STRING < MIN_WX_VERSION:
-            print 'You need to upgrade wxPython to v%s (or higher) to run SPE.'%MIN_WX_VERSION
-            print GET_WXPYTHON
+            print('You need to upgrade wxPython to v%s (or higher) to run SPE.'%MIN_WX_VERSION)
+            print(GET_WXPYTHON)
             sys.exit()
     except ImportError:
-            print "Error: SPE requires wxPython, which doesn't seem to be installed."
-            print GET_WXPYTHON
+            print("Error: SPE requires wxPython, which doesn't seem to be installed.")
+            print(GET_WXPYTHON)
             sys.exit()
-    print 'Warning: the package python-wxversion was not found, please install it!'
-    print 'SPE will continue anyway, but not all features (such as wxGlade) might work.'
+    print('Warning: the package python-wxversion was not found, please install it!')
+    print('SPE will continue anyway, but not all features (such as wxGlade) might work.')
 
     
 import info
@@ -38,43 +38,44 @@ INFO['description']=\
 """This is the main SPE application created with SPE and wxGlade."""
 __doc__ = INFO['doc']%INFO
     
-print """
+print("""
 SPE v%(version)s (c)2003-2008 www.stani.be
 
 If spe fails to start:
  - type "%(python)s SPE.py --debug > debug.txt 2>&1" at the command prompt
    (or if you use tcsh: "%(python)s SPE.py --debug >& debug.txt")
  - send debug.txt with some info to spe.stani.be[at]gmail.com
- """%INFO
+ """%INFO)
  
 ####Import Modules
 
 #---General
-import ConfigParser, sys, os, wx
+import configparser as ConfigParser
+import sys, os, wx
 import sm.wxp.smdi as smdi
 import Menu,Parent,Child
 from optparse import OptionParser
 #---Blender
-print "Blender support",
+print("Blender support", end=' ')
 try:
     import Blender
     redraw      = Blender.Redraw
-    print 'enabled.'
+    print('enabled.')
 except ImportError:
     Blender     = None
     redraw      = None
-    print 'disabled (run SPE inside Blender to enable).'
+    print('disabled (run SPE inside Blender to enable).')
     
 #---Crypto
 try:
     from Crypto.Cipher import DES
     fCrypto     = True
-    print "Encrypted debugging enabled.\n"
+    print("Encrypted debugging enabled.\n")
 except ImportError:
     fCrypto     = False
-    print """\nEncrypted debugging disabled. 
+    print("""\nEncrypted debugging disabled.
   If you prefer encrypted debugging, install the "Python Cryptography Toolkit"
-  from http://www.amk.ca/python/code/crypto\n"""
+  from http://www.amk.ca/python/code/crypto\n""")
 
 ####Constants
 MDI         = 0
@@ -105,11 +106,12 @@ else:
 
 ####Preferences
 config=ConfigParser.ConfigParser()
-config.readfp(open(INFO['defaults']))
+with open(INFO['defaults']) as defaultsFile:
+    config.read_file(defaultsFile)
 try:
     config.read(INFO['defaultsUser'])
 except:
-    print 'Spe warning: could not load user options'
+    print('Spe warning: could not load user options')
    
 # If there is a preference in the user's defaults that is not in
 # the regular defaults file,  add it
@@ -151,7 +153,7 @@ except:
     
 #---MDI
 mdi         = config.get('Default','Mdi')
-if not smdi.DI.has_key(mdi):
+if mdi not in smdi.DI:
     mdi     = smdi.Default
     config.set('Default','Mdi',mdi)
     
@@ -174,7 +176,7 @@ class Translate:
             label           = entry[0]
             shortcut        = ''
         l               = self.strip(label)
-        if self.keys.has_key(l):
+        if l in self.keys:
             shortcut    = self.keys[l]
         if shortcut:
             return '%s\t%s'%(label,shortcut)
@@ -193,19 +195,21 @@ if shortcuts == smdi.DEFAULT:
 else:
     _shortcuts      = shortcuts
 import _spe.shortcuts as sc
-execfile(os.path.join(os.path.dirname(sc.__file__),'%s.py'%_shortcuts))
+shortcutFile = os.path.join(os.path.dirname(sc.__file__),'%s.py'%_shortcuts)
+with open(shortcutFile, 'rb') as shortcutSource:
+    exec(compile(shortcutSource.read(), shortcutFile, 'exec'), globals())
 import wxgMenu
 wxgMenu._   = Translate(keys)
 
 #---feedback
 if __debug:
-    print """Spe is running in debugging mode with this configuration:
+    print("""Spe is running in debugging mode with this configuration:
 - platform  : %s
 - python    : %s
 - wxPython  : %s
 - interface : %s
 - encoding  : %s
-"""%(smdi.PLATFORM,INFO['pyVersionC'],INFO['wxVersionC'],mdi,INFO['encoding'])
+"""%(smdi.PLATFORM,INFO['pyVersionC'],INFO['wxVersionC'],mdi,INFO['encoding']))
     
 ####Application
 app = smdi.App(\
@@ -233,18 +237,14 @@ app = smdi.App(\
 
 app.MainLoop()
 
-print "\nThank you for using SPE, please donate to support further development."
+print("\nThank you for using SPE, please donate to support further development.")
 
 if __debug:
     try:
         import msvcrt
-        print "\nPress any key to quit..."
+        print("\nPress any key to quit...")
         msvcrt.getch( )
     except:
         import time
-        print "\nPress Ctrl+C to quit..."
+        print("\nPress Ctrl+C to quit...")
         #time.sleep(10)
-
-
-
-

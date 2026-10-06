@@ -6,12 +6,12 @@
 # Licence:      wxWindows license
 #----------------------------------------------------------------------------
 import wx
-import thread
+import _thread as thread
 import time
 import sys
 import wx.lib.newevent
-import SimpleXMLRPCServer
-import xmlrpclib 
+import xmlrpc.server as SimpleXMLRPCServer
+import xmlrpc.client as xmlrpclib
 
 (PostArgsEvent, EVT_POST_ARGS) = wx.lib.newevent.NewEvent()
 
@@ -75,7 +75,7 @@ class SingleInstanceApp(wx.App):
             running = 1
             while running:
                 running = 0
-                print "_spe/sm/wxp/singleApp.py:78: running"
+                print("_spe/sm/wxp/singleApp.py:78: running")
                 running = running + self.argsPosterThread.IsRunning()
                 time.sleep(0.1)
                 

@@ -19,7 +19,7 @@ import __main__
 #---run: from pywin.framework.scriptutils (c)Mark Hammond-----------------------
 def run(fileName=None,source=None,mainDict=__main__.__dict__,profiling=0):
     import traceback
-    print
+    print()
     bWorked = 0
     exitCode = 0
     osPath=None
@@ -50,9 +50,9 @@ def run(fileName=None,source=None,mainDict=__main__.__dict__,profiling=0):
             stats                   = pstats.Stats(prof)
             stats.sort_stats('cum','time').print_stats()
         else:
-            exec codeObject in mainDict
+            exec(codeObject, mainDict)
         bWorked = 1
-    except SystemExit, code:
+    except SystemExit as code:
         exitCode = code
         bWorked = 1
     except KeyboardInterrupt:
@@ -65,9 +65,9 @@ def run(fileName=None,source=None,mainDict=__main__.__dict__,profiling=0):
     except AttributeError:
         pass
     if bWorked:
-        print "Script '%s' returned exit code %s" %(base, exitCode)
+        print("Script '%s' returned exit code %s" %(base, exitCode))
     else:
-        print 'Exception raised while running script  %s' % base
+        print('Exception raised while running script  %s' % base)
     if osPath:
         os.chdir(osPath)
 
@@ -75,7 +75,7 @@ def run(fileName=None,source=None,mainDict=__main__.__dict__,profiling=0):
 #---Import Module: from pywin.framework.scriptutils  (c)Mark Hammond------------
 def importMod(pathName,mainDict=None):
     import os,string,sys,__main__
-    print
+    print()
     # If already imported, dont look for package
     path, modName = os.path.split(pathName)
     modName, modExt = os.path.splitext(modName)
@@ -106,12 +106,12 @@ def importMod(pathName,mainDict=None):
         if path not in sys.path:sys.path.append(path)
         codeObj = compile('import '+modName,'<auto import>','exec')
         if not mainDict:mainDict=__main__.__dict__
-        exec codeObj in mainDict
+        exec(codeObj, mainDict)
         if bNeedReload:
             reload(sys.modules[modName])
-        print 'Successfully ' + what + 'ed module "'+modName+'"'
-    except Exception,message:
-        print 'Failed to ' + what + ' module "'+modName+'" (%s)'%message
+        print('Successfully ' + what + 'ed module "'+modName+'"')
+    except Exception as message:
+        print('Failed to ' + what + ' module "'+modName+'" (%s)'%message)
 
 def GetPackageModuleName(fileName):
     """Given a filename, return (module name, new path).
@@ -152,19 +152,19 @@ def IsOnPythonPath(path):
             # Python 1.5 and later allows an empty sys.path entry.
             if syspath:# and os.path.abspath(syspath)==os.path.normpath(path):
                 return 1
-        except Exception, details:
-            print "Warning: The sys.path entry '%s' is invalid\n%s" \
-                % (syspath, details)
+        except Exception as details:
+            print("Warning: The sys.path entry '%s' is invalid\n%s" \
+                % (syspath, details))
     return 0
 
 #---CheckFile: from pywin.framework.scriptutils  (c)Mark Hammond----------------
 import os,sys,traceback
 #some improvised helper functions to make it environment independent
 def smPrintStatus(x):
-    print x
+    print(x)
 
 def smJumpToPosition(fileName, lineno, col = 1):
-    print '-> fileName = "%s", lineno = %s, col = %s'%(fileName, lineno, col)
+    print('-> fileName = "%s", lineno = %s, col = %s'%(fileName, lineno, col))
 
 #adapted from pywin.framework
 def CheckFile(pathName,source=None,status=smPrintStatus,jump=smJumpToPosition):
@@ -179,8 +179,8 @@ def CheckFile(pathName,source=None,status=smPrintStatus,jump=smJumpToPosition):
     if not source:
         try:
             f = open(pathName)
-        except IOError, details:
-            print "Can't open file '%s' - %s" % (pathName, details)
+        except IOError as details:
+            print("Can't open file '%s' - %s" % (pathName, details))
             return
         try:
             source = f.read()
@@ -202,8 +202,8 @@ def CheckFile(pathName,source=None,status=smPrintStatus,jump=smJumpToPosition):
 def RunTabNanny(filename,status=smPrintStatus,jump=smJumpToPosition):
     try:
         import cStringIO, tabnanny
-    except Exception, message:
-        print message
+    except Exception as message:
+        print(message)
     # Capture the tab-nanny output
     newout = cStringIO.StringIO()
     old_out = sys.stderr, sys.stdout
@@ -221,8 +221,8 @@ def RunTabNanny(filename,status=smPrintStatus,jump=smJumpToPosition):
             status("The TabNanny found trouble at line %d" % lineno)
             jump(filename, lineno)
         except (IndexError, TypeError, ValueError):
-            print "The tab nanny complained, but I cant see where!"
-            print data
+            print("The tab nanny complained, but I cant see where!")
+            print(data)
         return 0
     return 1
 

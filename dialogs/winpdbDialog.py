@@ -65,7 +65,7 @@ class Create(wx.Dialog):
         kwds["style"] = wx.DEFAULT_DIALOG_STYLE
         wx.Dialog.__init__(self, *args, **kwds)
         self.panel_1 = wx.Panel(self, -1)
-        self.logo = wx.StaticBitmap(self.panel_1, -1, wx.Bitmap("blenpy.png", wx.BITMAP_TYPE_ANY))
+        self.logo = wx.StaticBitmap(self.panel_1, -1, app.bitmap("blenpy.png", wx.BITMAP_TYPE_ANY))
         self.title = wx.StaticText(self.panel_1, -1, _("label_1"))
         self.argumentsLabel = wx.StaticText(self, -1, _("Arguments"))
         self.arguments = wx.ComboBox(self, -1, choices=info['history'], style=wx.CB_DROPDOWN)

@@ -57,7 +57,7 @@ class Panel(wx.ListCtrl):
         # We can either derive from wx.Process and override OnTerminate
         # or we can let wx.Process send this window an event that is
         # caught in the normal way...
-        wx.EVT_END_PROCESS(self,-1,self.OnProcessEnded)
+        self.Bind(wx.EVT_END_PROCESS, self.OnProcessEnded)
         
     def reset(self):
         self.list   = [('','')]

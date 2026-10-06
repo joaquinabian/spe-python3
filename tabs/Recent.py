@@ -56,7 +56,7 @@ class Panel(wx.ListCtrl):
         i=0
         self.files = [(os.path.basename(str(file)),file) for file in self.files]
         try:
-            self.files.sort(key=lambda (name,path): name.lower())
+            self.files.sort(key=lambda entry: entry[0].lower())
         except:
             #python2.3
             self.files.sort()

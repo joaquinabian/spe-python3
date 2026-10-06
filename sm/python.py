@@ -33,7 +33,7 @@ class New:
 class Str:
     """Use its own dictionary as a string representation."""
     def __str__(self):
-        print self.__dict__()
+        print(self.__dict__())
         
 class ValueRange:
     """Range class between minimum and max with features."""

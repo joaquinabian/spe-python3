@@ -45,11 +45,6 @@ import inspect,keyword,os,sys,types
 WORDCHARS = "_.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 #-------------------------------------------------------------------------------
-try:
-    True
-except NameError:
-    True = 1==1
-    False = 1==0
 
 
 
@@ -798,4 +793,3 @@ def getargspec(func):
         return inspect.formatargvalues(*inspect.getargvalues(func)).replace('self, ','')+'\n\n'
     except:
         return ''
-
