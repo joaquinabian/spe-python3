@@ -211,7 +211,7 @@ class PythonBaseSTC(wx_stc.StyledTextCtrl):
             linePos     = self.PositionFromLine(line)
             self.CmdKeyExecute(wx_stc.STC_CMD_NEWLINE)
             indent      = self.GetLineIndentation(line)
-            padding     = self.indentation * (indent/max(1,self.tabWidth))
+            padding     = self.indentation * (indent//max(1,self.tabWidth))
             newpos      = self.GetCurrentPos()
             # smart indentation
             stripped    = txt[:pos-linePos].split('#')[0].strip()

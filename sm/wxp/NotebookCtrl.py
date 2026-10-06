@@ -3823,7 +3823,7 @@ class TabCtrl(wx.PyControl):
     def _CalcTabBitmapSize(self, tabIndex):
         result = (0, 0)
         bmp = self._GetTabBitmap(tabIndex)                
-        bmpOk = bmp.Ok()                          
+        bmpOk = bmp.IsOk()
         if bmpOk:
             result = (bmp.GetWidth(), bmp.GetHeight())
         return result
@@ -3920,11 +3920,11 @@ class TabCtrl(wx.PyControl):
                 xsize = ysize = mins+1
             else:
                 if self._style & NC_ROTATE:
-                    xoffset = (tabrect.width-self._maxtextheight-self._padding.y/2)/2
-                    yoffset = self._padding.x/2                    
+                    xoffset = (tabrect.width-self._maxtextheight-self._padding.y//2)//2
+                    yoffset = self._padding.x//2
                 else:
                     xoffset = tabrect.width-self._maxtextheight-self._padding.x
-                    yoffset = (tabrect.height-self._maxtextheight-self._padding.y/2)/2
+                    yoffset = (tabrect.height-self._maxtextheight-self._padding.y//2)//2
                 xsize = ysize = self._maxtextheight
             result = wx.Rect(tabrect.x+xoffset, tabrect.y+yoffset, xsize, ysize)
         return result
@@ -4088,7 +4088,7 @@ class TabCtrl(wx.PyControl):
             angle = (self._style & NC_LEFT) and 90.0 or 270.0
             dc.DrawRotatedText(self.GetPageText(tabIndex), xtextpos, ytextpos, angle)
         else:                
-            dc.DrawText(self.GetPageText(tabIndex), xtextpos, ytextpos)
+            dc.DrawText(self.GetPageText(tabIndex), int(xtextpos), int(ytextpos))
         
     def _DrawX(self, dc, tabrect, xrect, textColour):
         drawx, dxstyle = self.GetDrawX()
@@ -4345,7 +4345,6 @@ class TabCtrl(wx.PyControl):
         
         pt = self._GetPaintTools()
         
-        dc.BeginDrawing() 
 
         self._DrawBackground(dc, pt)
 
@@ -4449,7 +4448,6 @@ class TabCtrl(wx.PyControl):
             if self._isdragging and not self._isleaving:
                 self.DrawInsertionMark(dc, self._olddragpos)
                 
-        dc.EndDrawing()
       
 
 # ---------------------------------------------------------------------------- #
