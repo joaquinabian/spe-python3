@@ -54,7 +54,7 @@ class Ctrl:
             item.wx = None
         if fromItems:
             item._delete()
-            if self.items.has_key(item.id):
+            if item.id in self.items:
                 del self.items[item.id]
             
     def _renewItem(self,item):

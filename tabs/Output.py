@@ -1,6 +1,6 @@
 """Panel to execute scripts and redirect their output for SPE"""
 
-import os, re
+import codecs, os, re
 from html import escape
 import wx
 import wx.stc as wx_stc
@@ -58,10 +58,22 @@ class Output(html.HtmlWindow):
             #create process
             self.process        = wx.Process(self)
             self.process.Redirect()
-            if info.WIN:
-                self.pid        = wx.Execute(command, wx.EXEC_ASYNC | wx.EXEC_SHOW_CONSOLE, self.process)
-            else:
-                self.pid        = wx.Execute(command, wx.EXEC_ASYNC | wx.EXEC_MAKE_GROUP_LEADER, self.process)
+            self.stdoutDecoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
+            self.stderrDecoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
+            # Phoenix 4.3.1 cannot construct ExecuteEnv. Let the child inherit
+            # this setting only during launch, then restore SPE's environment.
+            previousEncoding = os.environ.get('PYTHONIOENCODING')
+            try:
+                os.environ['PYTHONIOENCODING'] = 'utf-8'
+                if info.WIN:
+                    self.pid    = wx.Execute(command, wx.EXEC_ASYNC | wx.EXEC_SHOW_CONSOLE, self.process)
+                else:
+                    self.pid    = wx.Execute(command, wx.EXEC_ASYNC | wx.EXEC_MAKE_GROUP_LEADER, self.process)
+            finally:
+                if previousEncoding is None:
+                    os.environ.pop('PYTHONIOENCODING', None)
+                else:
+                    os.environ['PYTHONIOENCODING'] = previousEncoding
             self.inputstream    = self.process.GetInputStream()        
             self.errorstream    = self.process.GetErrorStream()
             self.outputstream   = self.process.GetOutputStream()
@@ -119,18 +131,28 @@ class Output(html.HtmlWindow):
     #---event handlers
     def OnIdle(self, event):
             if self.inputstream.CanRead():
-                text = self.inputstream.read()
-                self.AddText(escape(text, quote=False).replace(' ','&nbsp;').replace('\t','&nbsp;'))
+                text = self.stdoutDecoder.decode(self.inputstream.read())
+                if text:
+                    self.AddText(escape(text, quote=False).replace(' ','&nbsp;').replace('\t','&nbsp;'))
             if self.errorstream.CanRead():
-                text = self.errorstream.read()
-                self.AddText(text,error=True)
+                text = self.stderrDecoder.decode(self.errorstream.read())
+                if text:
+                    self.AddText(text,error=True)
 
     def OnEndProcess(self, event):
         #unbind events
         self.Unbind(wx.EVT_IDLE)
         self.Unbind(wx.EVT_END_PROCESS)
         #check for any leftover output.
-        self.OnIdle(event)
+        while self.inputstream.CanRead() or self.errorstream.CanRead():
+            self.OnIdle(event)
+        # Complete each stream, including any incomplete final UTF-8 sequence.
+        text = self.stdoutDecoder.decode(b'', final=True)
+        if text:
+            self.AddText(escape(text, quote=False).replace(' ','&nbsp;').replace('\t','&nbsp;'))
+        text = self.stderrDecoder.decode(b'', final=True)
+        if text:
+            self.AddText(text,error=True)
         #destroy process
         if event != None:
             self.process.Destroy()
