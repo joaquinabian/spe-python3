@@ -55,7 +55,7 @@ Some bundled components use different compatible licenses and retain their own n
 
 The `sm/` support library contains its own original licensing notice and should not be assumed to be covered by the SPE GPL notice.
 
-A root `LICENSE` file will be added separately after the historical licensing material has been finalized.
+The complete GNU GPL version 2 license text is provided in `LICENSE`. The original SPE notices permitting use under version 2 or any later version remain authoritative for the `GPL-2.0-or-later` grant.
 
 ## Port modifications
 
