@@ -644,6 +644,7 @@ class Parent(Framework):
                     eventManager.DeregisterWindow(child.frame)
                 child.dead = 1
         #Destroy itself
+        eventManager.DeregisterWindow(self)
         self.Destroy()
         if event: event.Skip()
 

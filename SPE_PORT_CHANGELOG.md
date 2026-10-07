@@ -323,3 +323,22 @@ The running-window tests now pass, but a subsequent normal frame.Close() reprodu
 An earlier harness that exited MainLoop directly additionally saw a child activation callback access a deleted PythonBaseSTC; that observation is specific to that harness exit sequence and is not claimed as a normal-close reproduction. The final normal-close run reproduced the parent size callback and OnExit return issues above. The test process exited; no new SPE test window was left open.
 
 SingleInstanceApp.OnExit in sm/wxp/singleApp.py currently calls wx.Yield before stopping/waiting for its argument-posting thread and has no explicit return. Fixing the return value is straightforward, but changing event draining and teardown ordering needs review to preserve close/veto/save behavior and single-instance thread shutdown. No shutdown implementation changes were made in this pass. Recommended next review: narrowly define shutdown ordering and event-manager deregistration so pending events cannot invoke destroyed frames, while retaining the existing thread shutdown and returning an integer from OnExit. Do not redesign the notebook or replace wx.lib.evtmgr broadly.
+
+
+## Pass 6: shutdown compatibility only (2026-10-07)
+
+Investigation found that Parent.onFrameClose called Framework.onFrameClose with destroy=0, bypassing Framework's event-manager deregistration. It deregistered child frames but destroyed the parent while its own size-event subscription remained active. Default SPE startup sets active=True and disables the single-instance server, so the observed default-close size callback cannot be attributed solely to the wx.Yield in the server shutdown branch.
+
+Files changed:
+
+- `sm/wxp/smdi.py`: added eventManager.DeregisterWindow(self) immediately before the parent Destroy(), after close approval and existing child deregistration. The save confirmation/cancellation path returns before this change; event flow for a live parent remains registered. This shared parent close path covers Windows MDI and Linux split interfaces.
+- `sm/wxp/singleApp.py`: added return 0 at the end of OnExit, covering both active/non-server and server-owning branches. Preserved wx.Yield, argument-posting thread Stop(), and the existing wait loop; no thread lifecycle or event architecture redesign.
+- `SPE_PORT_CHANGELOG.md`: recorded investigation, narrowly scoped fixes, and verification.
+
+Verification used SPE.py --debug in the current Python 3.12 / wxPython 4.3.1 Windows environment with temporary in-memory event-loop harnesses:
+
+1. Normal startup, visible MDI main window, resize/refresh, then frame.Close(): MainLoop returned 0 with no captured callback exceptions and no invalid OnExit return error.
+2. Simulated a declined document-save confirmation via the document's confirmSave callback: frame.Close() left the main window visible. Restored the callback, resized/refreshed, and closed normally; no exceptions. This checks cancellation without interacting with a save dialog or writing document content.
+3. Enabled SPE's existing single-instance path in memory without changing preferences, on a temporary available localhost port. The main window appeared and closed normally. The actual XML-RPC thread Stop request completed; OnExit returned integer 0 and IsRunning() was False. No captured callback exceptions.
+
+Both changed source files parse under Python 3.12, and diff whitespace validation passes. No persistent harness files were created, and all verification app processes exited. Only these two shutdown issues were addressed. No third-party files or unrelated source were changed. Linux remains untested at runtime; macOS was not tested or modified.
