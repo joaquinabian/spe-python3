@@ -893,3 +893,41 @@ With source UNO uno, selection UNO, find string uno, replacement dos and flags F
 The checkpoint run intentionally failed its case-sensitive text assertion and then closed normally; no GUI callback exception accompanied it. A final verification run omitted that known behavior assertion and reran all implemented package/signature/PyFilling changes plus Unicode Replace All: MainLoop returned 0, with no captured callback exceptions. A prior long harness run required interruption after external fixture edits triggered normal state/prompt interactions; the harness subsequently synchronized test-only modified flags/timestamps before normal close. This was not an application persistence change. No active test SPE process remained after final verification.
 
 The systematic core UI pass remains incomplete. Remaining coverage from earlier passes still applies: full toolbar dispatch, all Preferences subdialogs, physical modal interaction, remaining Find/Replace semantics/Unicode range cases, actual Run/Stop/arguments and external terminal workflows, remaining view/document arrangements, complete PyFilling browsing, full printing/export variants and online help/link availability. PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki, Blender and other optional tools remain deferred. No dependencies or architecture/font changes. Windows and Linux shared paths are retained; Linux runtime remains entirely untested and macOS is out of scope. Temporary harness/profile/log files were removed, and the pre-existing .codex directory was left untouched. Changed source parses under Python 3.12; git diff --check passes.
+
+## Pass 21: Replace selection respects Match case; native Unicode-search checkpoint (2026-10-07)
+
+### Files changed
+
+- Parent.py: the single flag check in onReplace now uses wx.FR_MATCHCASE instead of wx.FR_WHOLEWORD when deciding whether to lowercase the selected/search text. With Match case enabled, comparison is exact; with it disabled, the existing Python str.lower comparison remains. The current search string is still required to match the selection. Existing Replace/Find/Replace All command wiring, UI, advancement, loop guards and replacement operations are retained. No broad search rewrite, Unicode normalization, third-party/global STC patch or optional tool change.
+- SPE_PORT_CHANGELOG.md: exact correction, verification, limitations and next checkpoint.
+
+### Windows tests
+
+Temporary harness runs started SPE.py --debug in real wx event loops with fresh isolated profiles inside the project root, invoked the real onReplace/onReplaceAll handlers, and inspected source text, selected next match, byte position and undo history. Every selected case below was tested with Whole word both enabled and disabled so that this unrelated flag no longer substitutes for Match case.
+
+- Match case ON, search uno, selected UNO: no replacement; advances to the following lowercase uno.
+- Match case ON, search uno, selected uno: replacement with dos occurs; advances to the following uno.
+- Match case OFF, search uno, selected UNO: replacement with dos occurs; advances to the following uno.
+- Spanish search niño, selected NIÑO: ON leaves NIÑO unchanged; OFF replaces it with chico. Both correctly advance to a subsequent niño using its actual UTF-8 byte position.
+- Additional exact single-selection fixtures containing only UNO or NIÑO, with Match case ON and no later matching text, stayed unchanged and returned no match without callback exceptions or undo entries.
+- A selection otro with search uno was left unchanged and advanced to uno. The next Replace changed that match to dos.
+- Successful selected replacements Undo to the original text and Redo to the expected replacement. Rejected selections create no undo action.
+- Replace All on UNO uno Uno uno: ON produced UNO dos Uno dos; OFF produced dos dos dos dos. Undo through its existing actions restored the original text, and Redo restored the result. No new grouping/undo policy was introduced.
+- The further Spanish Replace All test retained CRLF and exposed the native search limitation below. A temporary runtime-only comparison with the previous one-line flag confirmed identical Replace All results before and after the correction; no source file was reverted or modified for that baseline test.
+- Final verification reran all corrected selection/advancement/undo/Replace All semantics checks and the native/baseline probes, then closed SPE normally: MainLoop returned 0 with no captured callback exceptions, including the delayed GUI settling period before close. Physical dialog interaction was not claimed; this pass exercised existing command handlers with the normal Find/Replace event data.
+
+### Next non-trivial behavior decision: native non-ASCII case-insensitive Find
+
+With source NIÑO niño followed by another niño on a CRLF-separated line, search niño, Match case OFF and replacement chico, Replace All produced NIÑO chico followed by chico: it left the unselected uppercase NIÑO unchanged. The same output occurred using the prior onReplace selection flag, so the Match case correction did not introduce this behavior.
+
+A newly constructed plain wx.stc.StyledTextCtrl with code page 65001, text NIÑO niño and native FindText flags 0 returned byte range (6,11), skipping NIÑO and finding only the later lowercase niño. Thus the next-match lookup uses a native case-insensitive implementation that fails this Spanish Unicode case, while SPE's existing Python lower-based selected-text comparison handles it. No encoding setting or font change is indicated by this reproduction.
+
+Stopped here before substituting a SPE-level Unicode search implementation or changing third-party/native Scintilla behavior. The user's requested selected-text Match case fix is complete; existing Replace All search semantics are retained. Recommended next review is whether to authorize a narrowly scoped Unicode-aware case-insensitive Find path, preserving UTF-8 byte positions, wrap/selection behavior, Match case, Whole word and Replace All iteration. This would extend the current search behavior and needs deliberate scope rather than an incidental flag fix.
+
+The checkpoint run intentionally failed an assertion expecting all Spanish case variants to be found, then closed normally; its test assertion was not a GUI callback exception. The final verification accepted only the demonstrated existing native/baseline behavior and passed. The queued Preferences-subdialog step was not reached and must not be counted as tested. Further core UI testing stops at this earlier behavior checkpoint; the overall pass remains incomplete, with remaining coverage from Pass 20 still pending, including full toolbar/Preferences/modal interaction, remaining Unicode ranges and search combinations, actual Run/Stop/arguments/external-terminal workflows, remaining view/document operations, full printing/export/PyFilling browsing and online help availability. No optional PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki, Blender or other legacy tools were ported. No dependencies, architecture, UI or font changes. Shared Windows/Linux code remains intact; Linux runtime remains untested and macOS remains out of scope. The normal user profile and pre-existing .codex directory were left untouched. Temporary harness/profile/log files were removed. Parent.py parses under Python 3.12 and git diff --check passes.
+
+## Deferred Unicode case-insensitive Find issue (2026-10-07)
+
+At the user's instruction, no Unicode-aware Find implementation will be added now. Case-insensitive Find relies on native StyledTextCtrl/Scintilla search behavior and may fail for Unicode case pairs such as niño / NIÑO. Match-case searching and the corrected Replace behavior remain valid. This issue is deferred for a later Unicode-aware search pass.
+
+Work stops at this checkpoint. Only this changelog entry was added; no further source changes or runtime testing were performed.

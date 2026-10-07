@@ -1348,7 +1348,7 @@ Please report these details and operating system to %s."""%(message,INFO['author
                 return -1
             source=self.app.childActive.source
             selection=source.GetSelectedText()
-            if not(event.GetFlags() & wx.FR_WHOLEWORD):
+            if not(event.GetFlags() & wx.FR_MATCHCASE):
                 findStr=findStr.lower()
                 selection=selection.lower()
                 if findStr==self.replaceStr.lower():
