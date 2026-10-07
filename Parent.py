@@ -411,7 +411,7 @@ class Panel(wx.Notebook):
 
     ####Menu
     #---File
-    def new(self,name=UNNAMED,source='',maximize=None):
+    def new(self,name=UNNAMED,source='',maximize=None,sourceEncoding=None):
         """Create a new empty script window.?"""
         app = self.app
         child = app.ChildFrame(self.frame,
@@ -419,6 +419,7 @@ class Panel(wx.Notebook):
             extra       = name,
             fileName    = name,
             source      = source,
+            sourceEncoding = sourceEncoding,
             size        = app.size,
             maximize    = maximize)
         self.frame.menuBar.enable(1)
@@ -1012,10 +1013,11 @@ class Panel(wx.Notebook):
             else:
                 #not opened yet
                 try:
-                    source=open(fileName, newline="").read()
-                except:
-                    source='' # todo: make this an option
-                child=self.new(name=fileName,source=source,maximize=maximize)
+                    source, encoding = Child.readSource(fileName, self.defaultEncoding)
+                except (OSError, UnicodeError, LookupError, SyntaxError) as message:
+                    self.messageError("Unable to open '%s' (%s)" % (fileName, message))
+                    continue
+                child=self.new(name=fileName,source=source,maximize=maximize,sourceEncoding=encoding)
                 #if this file is in the workspace, then change the name
                 self.recent.add([fileName])
                 if lineno:child.scrollTo(lineno,col,select=select)

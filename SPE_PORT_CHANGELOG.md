@@ -458,3 +458,57 @@ Created a valid UTF-8-declared Python file containing curly quotation marks in a
 A safe fix must address the shared load boundary, not just the first bytes.replace argument: getEncoding currently assumes text, and initial dosLines detection has already received empty source. The existing fallback also rereads through codecs after a raw tab-conversion attempt. Moving conversion and decoding can change the existing preference behavior, while decoding before reading the declaration can select the wrong codec.
 
 Stopped for review before changing that fallback. Recommended next scope: read the file bytes without locale decoding, determine encoding from the source declaration/BOM or the existing application preference, decode once into Unicode, and preserve original newline detection before populating the editor. Explicitly decide where the ConvertTabsToSpaces preference applies so it is not silently bypassed by a second read. Preserve declared/configured legacy encodings and define decoding-error behavior without substituting an empty document or silently forcing UTF-8. Keep the current Parent/Child architecture and UI. No loader fallback or encoding-policy changes were made in this pass.
+
+
+## Pass 10: explicit file-loading encoding boundary (2026-10-07)
+
+### Loading rules
+
+- Read document contents in binary mode exactly once per load, then decode explicitly into str. No Windows locale/default text read and no heuristic encoding library.
+- `.py` and `.pyw` (case-insensitive): use tokenize.detect_encoding on the bytes. Honor a UTF-8 BOM and valid PEP 263 declarations, including a permitted second-line declaration. Without either, use Python 3's UTF-8 source default, independently of SPE's configured non-Python encoding. This preference distinction is explicitly required by the user.
+- Other text files: use SPE's configured defaultEncoding. The existing <default> preference still resolves to INFO['encoding']; explicit CP1252/Latin-1 settings remain those codecs. A literal coding line in non-Python text is not used as source-encoding detection. No fallback guess/reinterpretation when decoding fails.
+- Decode strictly. Unknown codecs, invalid source declarations/BOM conflicts, Unicode decode errors, and I/O failures are reported. A failed Open does not create an empty substitute document or alter the file. A failed reload leaves existing editor contents and encoding metadata intact.
+- Store the actual selected codec in fileEncoding, independently of the transient encoding field used by the sidebar. UTF-8 BOM files retain utf-8-sig metadata: the BOM is stripped on decoding and emitted once on subsequent Save. Non-Python documents retain their loaded codec even if their text contains a coding-like line.
+- Preserve decoded newline characters until the document's LF/CRLF mode is established. Set the editor EOL mode to match existing CRLF detection, then use the existing assertEOL behavior. All-LF and all-CRLF files round-trip; the existing normalization of mixed/CR-only endings was not expanded into a new preservation scheme.
+- Apply ConvertTabsToSpaces after decoding, using the existing TabWidth number of spaces per tab (simple replacement, not column-aware expandtabs). With the preference disabled, tabs are untouched. UseTabs/indentation settings are not changed. The legacy code attempted conversion on its raw preliminary read but then discarded it by rereading through codecs; conversion now honors the existing preference on the Unicode text actually supplied to the editor. This avoids reproducing that lost-conversion bug.
+
+### Files changed
+
+- `Child.py`: added the narrowly scoped readSource helper using binary reads, tokenize detection for Python source, and explicit decode. Added fileEncoding metadata and an optional sourceEncoding constructor argument. Revert uses the same helper when loading/reloading from disk; already-decoded text passed from Parent is not reread or decoded again (including empty files). Revert applies tab conversion in Unicode, records LF/CRLF mode, and preserves editor state on failure.
+- In the same file, Save encoding selection retains loaded codecs and UTF-8 BOM metadata; a new undeclared Python file uses UTF-8. Non-Python loaded codec takes precedence over coding-like text. Existing Python declaration handling on Save remains in place. Successful Save updates fileEncoding to the codec actually used. Moved getEncoding inside Save's existing pre-write validation try block, so an invalid edited codec is reported before overwriting, including a BOM document. Backup, encoding validation, codecs writer, Save As UI, and other save logic remain in place.
+- `Parent.py`: openList uses readSource and reports failures instead of substituting empty source; passes decoded text plus sourceEncoding through the existing new/ChildFrame path. The existing Parent/Child/MDI/split architecture remains.
+- `sm/scriptutils.py`: the enabled CheckFileOnSave check exposed another locale-dependent Python-source read during the round-trip test. Changed only that check's file reader to tokenize.open. Its compile-only syntax check/TabNanny behavior remains; no user code is executed as part of this check.
+- `SPE_PORT_CHANGELOG.md`: recorded exact rules, changes, tests, and limits.
+
+### Tests and results
+
+The temporary harness launched SPE.py --debug in the real Windows wx event loop using Python 3.12 / wxPython 4.3.1. Fixtures and backups stayed in a temporary directory inside the project root, cleaned on exit. Tests used actual SPE open/save/document-close paths and left CheckFileOnSave enabled. Error reporting was collected in the harness in place of dismissing repeated modal error dialogs. Preferences were changed only in memory for testing and restored before exit.
+
+Passed 14 open -> save -> close -> reopen round trips, asserting exact saved bytes, decoded editor text, retained codec, and LF/CRLF detection:
+
+- Python ASCII/UTF-8 without a declaration.
+- Undeclared Python UTF-8 containing Spanish accents, euro, and curly quotation marks that previously failed the locale-based read.
+- Python with coding: utf-8.
+- Python Latin-1 with coding: latin-1.
+- Python CP1252 with coding: cp1252 and CRLF.
+- UTF-8 BOM Python with CRLF and no declaration.
+- UTF-8 BOM Python with coding: utf-8 and LF.
+- .pyw with a shebang and second-line Latin-1 declaration.
+- Empty Python source.
+- Python with literal tabs and CRLF while conversion is disabled.
+- Non-Python CP1252 text with CRLF.
+- Non-Python CP1252 text containing a misleading coding: utf-8 line, confirming Save does not switch it to UTF-8.
+- Non-Python text with an explicit Latin-1 preference.
+- Non-Python UTF-8 text with the existing <default> preference.
+
+The Python tests initially ran with the application's configured encoding set to CP1252, confirming undeclared Python source still uses UTF-8 while non-Python files retain their configured codec.
+
+Additional passes:
+
+- With ConvertTabsToSpaces enabled, tabs became exactly TabWidth spaces; UseTabs remained its configured value, and CRLF remained after Save. No conversion took place in the disabled-preference round trip.
+- Unknown declared codec, invalid UTF-8 bytes under a UTF-8 declaration, non-UTF-8 undeclared Python bytes, and UTF-8 BOM/Latin-1 declaration conflict were rejected, reported once, and left the original file bytes unchanged; no child document was added.
+- Editing a BOM document's declaration to an unsupported codec and invoking Save reported the error without changing original bytes or retained fileEncoding.
+- After externally replacing a valid document with undecodable bytes, Revert returned False and retained the editor's previous text and codec.
+- Final run completed with no captured callback exceptions and MainLoop returned 0. All three changed source files parse under Python 3.12; diff whitespace validation passes.
+
+All requested loading tests pass. No additional configured-encoding/source-semantics conflict requiring review was encountered under the specified loading rules. Optional tools/plugins, font selection/configuration/fallback, output decoding, and macOS code were not modified. Linux remains runtime-untested; shared loading code preserves both supported interface paths. The temporary harness and fixtures were removed. Native modal error dialogs and changes/removal of an existing valid coding declaration were not exhaustively exercised; this pass is limited to loading boundaries and necessary codec-preserving Save changes.

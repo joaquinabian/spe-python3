@@ -178,7 +178,9 @@ def CheckFile(pathName,source=None,status=smPrintStatus,jump=smJumpToPosition):
     status(what+'ing module...')
     if not source:
         try:
-            f = open(pathName)
+            # This check reads Python source, independently of the locale.
+            import tokenize
+            f = tokenize.open(pathName)
         except IOError as details:
             print("Can't open file '%s' - %s" % (pathName, details))
             return

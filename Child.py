@@ -10,7 +10,7 @@ __doc__=INFO['doc']%INFO
 
 ####Modules---------------------------------------------------------------------
 import _thread as thread
-import ast, codecs, inspect, os, sys, re, shutil, time, types
+import ast, codecs, inspect, io, os, sys, re, shutil, time, tokenize, types
 
 import wx
 from wx.lib.evtmgr import eventManager
@@ -73,6 +73,17 @@ def isUtf8(text):
         return False
 
 
+def readSource(fileName, defaultEncoding):
+    """Read document bytes once; retain the codec needed for saving."""
+    with open(fileName, 'rb') as sourceFile:
+        data = sourceFile.read()
+    if os.path.splitext(fileName)[1].lower() in ('.py', '.pyw'):
+        encoding, unused = tokenize.detect_encoding(io.BytesIO(data).readline)
+    else:
+        encoding = INFO['encoding'] if defaultEncoding == DEFAULT else defaultEncoding
+    return data.decode(encoding), encoding
+
+
 ####Child Panel class-----------------------------------------------------------
 class Source(PythonSTC):
     def __init__(self,parent):
@@ -88,10 +99,11 @@ class Source(PythonSTC):
 
 class Panel(wx.SplitterWindow):
     ####Constructors------------------------------------------------------------
-    def __init__(self,parent,name='',fileName='',source='',*args,**kwds):
+    def __init__(self,parent,name='',fileName='',source='',sourceEncoding=None,*args,**kwds):
         self._fileName          = fileName
         self.name               = os.path.basename(fileName)
         self._source            = source
+        self.fileEncoding       = sourceEncoding
         #initialize
         self.argumentsPrevious  = []
         self.changed            = 0
@@ -301,13 +313,12 @@ class Panel(wx.SplitterWindow):
                 #convert to Unix lines
                 source          = source.replace('\r\n','\n')
 
-            #get encoding
-            self.getEncoding(source)
             #Phoenix returns Unicode text; encoding happens at the file boundary.
             sourceUnicode       = source
 
             #check if source can be encoded, to avoid overwriting with empty file
             try:
+                self.getEncoding(source)
                 sourceUnicode.encode(self.encoding)
             except Exception as message:
                 self.parentPanel.messageError(\
@@ -357,6 +368,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
                 return
 
             #save succesfull
+            self.fileEncoding = self.encoding
             self.notesSave(file=1)
             self.changed    = 0
             self.saved      = source
@@ -1260,28 +1272,24 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
         self.frame.setTitle()
 
     def revert(self,source=None):
-        if not source:
-            try:
-                sourceFile      = open(self.fileName,'rb')
-                source          = sourceFile.read()
-                sourceFile.close()
-                if self.parentPanel.getValue('ConvertTabsToSpaces'):
-                    source=source.replace('\t',' '.ljust(self.parentPanel.getValue('TabWidth')))
-            except IOError:
-                source          = ''
-        self.getEncoding(source)
         try:
-            if source and self.encoding:
-                #read the source
-                sourceFile      = codecs.open(self.fileName,'rb',self.encoding)
-                source          = sourceFile.read()
-                sourceFile.close()
-                #Pass decoded Unicode text to Phoenix.
-                self.source.SetText(source)
-            else:
-                self.source.SetText(source)
-        except Exception as message:
+            encoding = self.fileEncoding
+            if source is None or (not source and encoding is None):
+                if self.fileName == NEWFILE:
+                    source = ''
+                else:
+                    source, encoding = readSource(self.fileName, self.parentPanel.defaultEncoding)
+            dosLines = '\r\n' in source
+            if self.parentPanel.getValue('ConvertTabsToSpaces'):
+                source = source.replace('\t', ' ' * self.parentPanel.getValue('TabWidth'))
+        except (OSError, UnicodeError, LookupError, SyntaxError) as message:
             self.SetStatusText("Unicode Error for '%s' (%s)"%(self.fileName, message),1)
+            return False
+        self.fileEncoding = encoding
+        self.encoding = encoding
+        self.dosLines = dosLines
+        self.source.SetEOLMode(wx.stc.STC_EOL_CRLF if dosLines else wx.stc.STC_EOL_LF)
+        self.source.SetText(source)
         self.source.assertEOL()
         if os.path.exists(self.fileName) and self.fileName != NEWFILE:
             self.fileTime   = os.path.getmtime(self.fileName)
@@ -1353,6 +1361,9 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
         source=self.source
 
     def getEncoding(self,source):
+        if self.fileEncoding is not None and os.path.splitext(self.fileName)[1].lower() not in ('.py', '.pyw'):
+            self.encoding = self.fileEncoding
+            return
         if isUtf8(source):
             self.encoding = "utf8"
             return
@@ -1363,7 +1374,11 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
             self.encoding   = encode_hit.group(1)
         else:
             #get default values
-            if self.parentPanel.defaultEncoding == '<default>':
+            if self.fileEncoding is not None:
+                self.encoding = self.fileEncoding
+            elif os.path.splitext(self.fileName)[1].lower() in ('.py', '.pyw'):
+                self.encoding = 'utf-8'
+            elif self.parentPanel.defaultEncoding == '<default>':
                 #SPE's application default when no file declaration is present.
                 self.encoding   = INFO['encoding']
             else:
@@ -1377,6 +1392,8 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
                 self.setStatus('Warning: SPE uses "utf8" instead of "ascii" codec.')
                 self.encoding   = 'utf8'
         self.encoding = str(self.encoding)
+        if self.fileEncoding == 'utf-8-sig' and codecs.lookup(self.encoding).name == 'utf-8':
+            self.encoding = 'utf-8-sig'
 
 class DropOpen(wx.FileDropTarget):
     """Opens a file when dropped on parent frame."""
