@@ -490,7 +490,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
                 #defaultDir  = os.getcwd(),
                 #defaultFile = "",
                 wildcard    = "Python source (*.py)|*.py|Text (*.txt)|*.txt|All files (*.*)|*.*",
-                style       = wx.OPEN | wx.FILE_MUST_EXIST
+                style       = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
                 )
             answer      = dlg.ShowModal()
             signature   = dlg.GetPath()
@@ -498,7 +498,9 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
             if answer == wx.ID_CANCEL: return
         # Have a signature file
         try:
-            self.source.ReplaceSelection(open(signature).read()+'\n')
+            text, encoding = readSource(signature,self.parentPanel.defaultEncoding)
+            text = text.replace('\r\n','\n').replace('\r','\n')
+            self.source.ReplaceSelection(text+'\n')
         except:
             self.setStatus('SPE could not open signature "%s"!'% signature)
         return

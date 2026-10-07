@@ -887,7 +887,7 @@ class Panel(wx.Notebook):
                  style=wx.DEFAULT_FRAME_STYLE, rootObject=object,
                  rootLabel=str(object), rootIsNamespace=0, static=0)
         filling.Show(1)
-        wx.FutureCall(1000,filling.Raise)
+        wx.FutureCall(1000,lambda: filling and filling.Raise())
 
     def test_regular_expression_with_kiki(self):
         """Test regular expression with Kiki..."""

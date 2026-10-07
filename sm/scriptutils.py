@@ -74,74 +74,92 @@ def run(fileName=None,source=None,mainDict=__main__.__dict__,profiling=0):
 
 #---Import Module: from pywin.framework.scriptutils  (c)Mark Hammond------------
 def importMod(pathName,mainDict=None):
-    import os,string,sys,__main__,importlib
+    import importlib, importlib.util
     print()
-    # If already imported, dont look for package
-    path, modName = os.path.split(pathName)
-    modName, modExt = os.path.splitext(modName)
-    newPath = None
-    for key, mod in sys.modules.items():
-        if hasattr(mod, '__file__'):
-            fname = mod.__file__
-            base, ext = os.path.splitext(fname)
-            if ext.lower() in ['.pyo', '.pyc']:
-                ext = '.py'
-            fname = base + ext
-            if os.path.abspath(fname)==os.path.abspath(pathName):
-                modName = key
-                break
-    else: # for not broken
-        modName, newPath = GetPackageModuleName(pathName)
-        if newPath and newPath not in sys.path:
-            sys.path.insert(0,newPath)
-    if modName in sys.modules:
-        bNeedReload = 1
-        what = "reload"
-    else:
-        what = "import"
-        bNeedReload = 0
+    modName = os.path.splitext(os.path.basename(pathName))[0]
+    what = 'import'
+    reloading = None
+    previous = None
     try:
-        # always do an import, as it is cheap is already loaded.  This ensures
-        # it is in our name space.
-        if path not in sys.path:sys.path.append(path)
-        codeObj = compile('import '+modName,'<auto import>','exec')
-        if not mainDict:mainDict=__main__.__dict__
-        exec(codeObj, mainDict)
+        modName, searchRoot = GetPackageModuleName(pathName)
+        parts = modName.split('.')
+        selected = os.path.abspath(pathName)
+        expected = []
+        for i in range(1,len(parts)+1):
+            name = '.'.join(parts[:i])
+            fileName = (selected if i == len(parts) else
+                        os.path.join(searchRoot,*parts[:i],'__init__.py'))
+            expected.append((name,fileName))
+        # Check cached ancestors before importlib can reuse another project.
+        for name,fileName in expected:
+            if name in sys.modules:
+                _verifyShellModule(name,sys.modules[name],fileName)
+        bNeedReload = modName in sys.modules
+        what = 'reload' if bNeedReload else 'import'
+        # Only this project's import root is added/moved to the front.
+        for i,entry in enumerate(sys.path):
+            if _shellSourcePath(entry or os.getcwd()) == _shellSourcePath(searchRoot):
+                sys.path.insert(0,sys.path.pop(i))
+                break
+        else:
+            sys.path.insert(0,searchRoot)
+        importlib.invalidate_caches()
+        for name,fileName in expected:
+            if name not in sys.modules:
+                spec = importlib.util.find_spec(name)
+                if spec is None or _shellSourcePath(spec.origin) != _shellSourcePath(fileName):
+                    raise ImportError('"%s" does not resolve to selected source "%s"' % (name,fileName))
+            module = importlib.import_module(name)
+            _verifyShellModule(name,module,fileName)
         if bNeedReload:
-            importlib.reload(sys.modules[modName])
+            reloading = module
+            previous = module.__dict__.copy()
+            module = importlib.reload(module)
+            _verifyShellModule(modName,module,selected)
+        if mainDict is None:mainDict=__main__.__dict__
+        # Match ordinary "import pkg.sub.module": bind pkg, not a new leaf alias.
+        mainDict[parts[0]] = sys.modules[parts[0]]
         print('Successfully ' + what + 'ed module "'+modName+'"')
+        return module
     except Exception as message:
+        if previous is not None:
+            reloading.__dict__.clear()
+            reloading.__dict__.update(previous)
         print('Failed to ' + what + ' module "'+modName+'" (%s)'%message)
 
-def GetPackageModuleName(fileName):
-    """Given a filename, return (module name, new path).
-       eg - given "c:\a\b\c\my.py", return ("b.c.my",None) if "c:\a" is on sys.path.
-       If no package found, will return ("my", "c:\a\b\c")
-    """
-    import os,string
-    path, fname = os.path.split(fileName)
-    origPath=path
-    fname = os.path.splitext(fname)[0]
-    modBits = []
-    newPathReturn = None
-    if not IsOnPythonPath(path):
-        # Module not directly on the search path - see if under a package.
-        while len(path)>3: # ie 'C:\'
-            path, modBit = os.path.split(path)
-            modBits.append(modBit)
-            # If on path, _and_ existing package of that name loaded.
-            if IsOnPythonPath(path) and sys.modules.has_key(modBit) and \
-               ( os.path.exists(os.path.join(path, '__init__.py')) or \
-                 os.path.exists(os.path.join(path, '__init__.pyc')) or \
-                 os.path.exists(os.path.join(path, '__init__.pyo')) \
-               ):
-                modBits.reverse()
-                return string.join(modBits, ".") + "." + fname, newPathReturn
-            # Not found - look a level higher
-        else:
-            newPathReturn = origPath
+def _shellSourcePath(fileName):
+    if not fileName:return None
+    import importlib.util
+    if fileName.endswith(('.pyc','.pyo')):
+        try:fileName=importlib.util.source_from_cache(fileName)
+        except ValueError:fileName=os.path.splitext(fileName)[0]+'.py'
+    return os.path.normcase(os.path.realpath(fileName))
 
-    return fname, newPathReturn
+def _verifyShellModule(name,module,fileName):
+    spec = getattr(module,'__spec__',None)
+    if (getattr(module,'__name__',None) != name or spec is None or
+            spec.name != name or
+            _shellSourcePath(getattr(module,'__file__',None)) != _shellSourcePath(fileName) or
+            _shellSourcePath(spec.origin) != _shellSourcePath(fileName)):
+        raise ImportError('Conflicting module "%s"; expected source "%s", found "%s"' %
+                          (name,fileName,getattr(module,'__file__',None)))
+    if os.path.basename(fileName) == '__init__.py':
+        paths = list(getattr(module,'__path__',()))
+        if len(paths) != 1 or _shellSourcePath(paths[0]) != _shellSourcePath(os.path.dirname(fileName)):
+            raise ImportError('Conflicting package search path for "%s"' % name)
+
+def GetPackageModuleName(fileName):
+    """Return the traditional package name and its required import root."""
+    path,fname = os.path.split(os.path.abspath(fileName))
+    stem = os.path.splitext(fname)[0]
+    parts = [] if stem == '__init__' else [stem]
+    while os.path.isfile(os.path.join(path,'__init__.py')):
+        parent,component = os.path.split(path)
+        if parent == path:break
+        parts.insert(0,component)
+        path = parent
+    if not parts:parts=[stem]
+    return '.'.join(parts),path
 
 def IsOnPythonPath(path):
     "Given a path only, see if it is on the Pythonpath.  Assumes path is a full path spec."
