@@ -201,11 +201,11 @@ def CheckFile(pathName,source=None,status=smPrintStatus,jump=smJumpToPosition):
 
 def RunTabNanny(filename,status=smPrintStatus,jump=smJumpToPosition):
     try:
-        import cStringIO, tabnanny
+        import io, tabnanny
     except Exception as message:
         print(message)
     # Capture the tab-nanny output
-    newout = cStringIO.StringIO()
+    newout = io.StringIO()
     old_out = sys.stderr, sys.stdout
     sys.stderr = sys.stdout = newout
     try:

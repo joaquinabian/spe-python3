@@ -1385,10 +1385,11 @@ class TabCtrl(wx.PyControl):
 
         self._pages.pop(nPage)
         
-        if self._timers[nPage].IsRunning():
-            self._timers[nPage].Stop()
-            
-        self._timers[nPage].Destroy()
+        timer = self._timers.pop(nPage)
+        if timer.IsRunning():
+            timer.Stop()
+
+        timer.Destroy()
         
         if self._istooltipshown:
             self._tipwindow.Destroy()

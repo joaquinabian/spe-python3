@@ -342,3 +342,46 @@ Verification used SPE.py --debug in the current Python 3.12 / wxPython 4.3.1 Win
 3. Enabled SPE's existing single-instance path in memory without changing preferences, on a temporary available localhost port. The main window appeared and closed normally. The actual XML-RPC thread Stop request completed; OnExit returned integer 0 and IsRunning() was False. No captured callback exceptions.
 
 Both changed source files parse under Python 3.12, and diff whitespace validation passes. No persistent harness files were created, and all verification app processes exited. Only these two shutdown issues were addressed. No third-party files or unrelated source were changed. Linux remains untested at runtime; macOS was not tested or modified.
+
+
+## Pass 7: basic editor operations; output decoding review checkpoint (2026-10-07)
+
+Worked incrementally in the running Windows MDI application using Python 3.12 / wxPython 4.3.1. Reran the affected operation and preceding checks after each concrete blocker. No UI or architectural refactoring, optional plugin port, third-party modification, or macOS work.
+
+### Files changed and exact changes
+
+- `sm/scriptutils.py`: the enabled CheckFileOnSave check reached RunTabNanny, which imported removed cStringIO and then accessed an unbound name. Replaced that import with io and its capture buffer with io.StringIO. Retained the standard-library tabnanny check and output capture/restoration.
+- `Parent.py`: in openList only, replaced types.ListType/ types.TupleType with the built-in list/tuple, retaining exact-type comparisons. Disabled universal newline translation on the preliminary text read with newline="" so Child's existing CRLF detection receives original line endings. Retained the subsequent encoding-aware read and configured/declaration-based encoding selection; did not force a new encoding policy. In onFind, extracted the first element of each Phoenix FindText range tuple, retaining the existing search/wrap logic and return position.
+- `sm/wxp/NotebookCtrl.py`: DeletePage now removes its timer from _timers with pop(nPage) before stopping/destroying it. Previously the destroyed timer stayed in the list, so repeated close/reopen/close accessed a deleted native timer. The timer and page lists now stay aligned.
+- `sm/wxp/realtime.py`: only the reached TreeCtrl.AppendItem and TreeCtrl.SetItemImage has_key calls became membership checks. Other unreached methods remain unchanged.
+- `tabs/Output.py`: restored integer scrollbar counts using // in AddText. Replaced removed Windows EXEC_NOHIDE with Phoenix EXEC_SHOW_CONSOLE to retain the existing visible-console execution intent. Linux's EXEC_MAKE_GROUP_LEADER branch remains unchanged. No process-output decoder was added yet.
+- `SPE_PORT_CHANGELOG.md`: documented changes, verification, and outstanding decisions.
+
+### Tests performed and results
+
+The temporary harness ran SPE.py --debug and scheduled checks through the actual wx event loop. It used SPE's new/save/close/open paths, menu edit handlers, Find/Replace dialog data and handlers, and the normal run_with_arguments output path. Text entry was programmatic through StyledTextCtrl editing operations and Return key-event delivery, rather than physical keyboard typing. The temporary Python file and backup were inside the project root; they and the harness were removed afterward.
+
+Passed before the output test:
+
+1. Created a new document via Parent.new, inserted/edited a small Python example, and delivered Return to its actual editor key handler. Auto-indentation produced spaces as expected.
+2. Colourised the document and verified the Python `if` keyword received STC_P_WORD. This checks basic lexer operation, not every syntax style.
+3. Saved through Child.save with the normal CheckFileOnSave preference enabled. The TabNanny check no longer errors. Save was invoked with a supplied filename; native Save As file-picker interaction was not tested.
+4. Closed/reopened via SPE's document close and Parent.openList paths. Repeated document closing passed after the timer-list fix. Native Open file-picker interaction was not tested.
+5. Saved/reopened a UTF-8-declared source containing all requested characters: ? ? ? ? ? ?. Compared saved UTF-8 bytes and reopened Unicode text successfully. No new codec override was introduced. Other configured encodings, BOMs, and invalid-byte error behavior were not fully exercised in this pass.
+6. The new document saved with LF. A separate all-CRLF source was reopened and saved; bytes matched exactly after disabling newline translation in the preliminary read. Mixed endings and CR-only sources were not tested. Existing assertEOL/normalization preferences remain.
+7. Used the actual menu undo/redo handlers and asserted text restoration/reapplication.
+8. Used the actual menu copy/paste/cut handlers with the Windows clipboard and verified the resulting text. Clipboard tests used ASCII text.
+9. Created the Find/Replace dialog, supplied its FindReplaceData, and called SPE's actual find/replace handlers. ASCII match selection and replacement passed after adapting the FindText tuple result. Unicode search ranges, Replace All, and manual dialog-button interaction remain untested.
+10. Saved `print("SPE_BASIC_RUN_OK")` and invoked Parent.run_with_arguments(confirm=False, beep=False). The current configured Python process launched after the Output compatibility fixes, but its stdout could not be displayed due to the pending byte/text issue below. This test does NOT pass yet.
+
+All five changed sources parse under Python 3.12; final diff whitespace validation passes. Earlier editor checks completed with no captured callback exceptions. The final execution test produced the concrete callback exceptions below, and its process exited. Existing duplicate image-handler notices remain. Linux runtime remains untested; shared changes retain its architecture.
+
+### Stop for review: redirected process output encoding
+
+Phoenix process stream read() returned bytes. Output.OnIdle passed stdout bytes to html.escape, causing TypeError: a bytes-like object is required, not str. The traceback occurred while OnEndProcess attempted to drain remaining output, so the normal output completion/display path did not finish. Stderr also feeds AddText and needs a consistent byte/text boundary.
+
+Decoding requires an explicit process-output encoding policy, independent of source-file encodings and GUI Unicode. Arbitrary locale-based decoding or silently treating every external program as UTF-8 could corrupt non-ASCII output. Incremental decoding is needed because stream reads may split multibyte sequences.
+
+Recommended approach for review: define UTF-8 for SPE-launched Python stdout/stderr and use per-stream incremental decoders, flushing them on process completion. Preserve source encodings and Unicode GUI strings. Scope this to the Python run/output path, reviewing how to establish that encoding in the child environment without changing unrelated process behavior. No decoding or child-environment changes were made in this pass.
+
+A second callback in that final run exposed Ctrl._deleteItem in sm/wxp/realtime.py still using self.items.has_key(item.id) when realtime sidebar updates removed an obsolete tree item after editing. This concrete compatibility blocker is recorded for the next incremental fix; it was not changed after the output-decoding review checkpoint. Consequently realtime sidebar refresh is not yet fully restored.

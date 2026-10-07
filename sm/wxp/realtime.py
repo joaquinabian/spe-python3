@@ -218,7 +218,7 @@ class TreeCtrl(Ctrl,wx.TreeCtrl):
                                 data    = data
                             )
         #get item
-        if self.items.has_key(id):
+        if id in self.items:
             item            = self.items[id]
             item.reset()
         else:
@@ -263,7 +263,7 @@ class TreeCtrl(Ctrl,wx.TreeCtrl):
         
     def SetItemImage(self,item,image,which=wx.TreeItemIcon_Normal):
         """Sets the image for a certain state (which) of a TreeItem"""
-        if (not item.image.has_key(which)) or item.image[which] != image:
+        if (which not in item.image) or item.image[which] != image:
             item.image[which] = image
             item._update.append((wx.TreeCtrl.SetItemImage,image,which))
         item._updateAll.append((wx.TreeCtrl.SetItemImage,image,which))

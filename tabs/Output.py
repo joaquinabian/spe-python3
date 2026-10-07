@@ -59,7 +59,7 @@ class Output(html.HtmlWindow):
             self.process        = wx.Process(self)
             self.process.Redirect()
             if info.WIN:
-                self.pid        = wx.Execute(command, wx.EXEC_ASYNC | wx.EXEC_NOHIDE, self.process)
+                self.pid        = wx.Execute(command, wx.EXEC_ASYNC | wx.EXEC_SHOW_CONSOLE, self.process)
             else:
                 self.pid        = wx.Execute(command, wx.EXEC_ASYNC | wx.EXEC_MAKE_GROUP_LEADER, self.process)
             self.inputstream    = self.process.GetInputStream()        
@@ -91,7 +91,7 @@ class Output(html.HtmlWindow):
             text    = '<font color=red>%s</font>'%text
         text        = text.replace('\n','<br>')
         self.AppendToPage(text)
-        self.Scroll(0,self.GetVirtualSize()[1]/self.GetScrollPixelsPerUnit()[1])
+        self.Scroll(0,self.GetVirtualSize()[1]//self.GetScrollPixelsPerUnit()[1])
 
     def SetStatusText(self,text):
         print(text)

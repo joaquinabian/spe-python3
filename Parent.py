@@ -994,11 +994,11 @@ class Panel(wx.Notebook):
     def openList(self,fileList,lineno=None,col=1,message=1,select='line',\
                     maximize=None, verbose=False):
         """Open a list of files."""
-        if type(fileList)!=types.ListType:
+        if type(fileList)!=list:
             fileList=[fileList]
         child = None
         for fileName in fileList:
-            if type(fileName)==types.TupleType:
+            if type(fileName)==tuple:
                 fileName, lineno, col = fileName
             if not os.path.exists(fileName): continue
             if self.app.DEBUG:
@@ -1012,7 +1012,7 @@ class Panel(wx.Notebook):
             else:
                 #not opened yet
                 try:
-                    source=open(fileName).read()
+                    source=open(fileName, newline="").read()
                 except:
                     source='' # todo: make this an option
                 child=self.new(name=fileName,source=source,maximize=maximize)
@@ -1189,10 +1189,10 @@ Please report these details and operating system to %s."""%(message,INFO['author
                 pass
             current=source.GetCurrentPos()
             position=source.FindText(current,len(source.GetText()),self.findStr,
-                    self.stcFindFlags)
+                    self.stcFindFlags)[0]
             if position==-1:#wrap around
                 self.wrapped=1
-                position=source.FindText(0,current+len(self.findStr),self.findStr,self.stcFindFlags)
+                position=source.FindText(0,current+len(self.findStr),self.findStr,self.stcFindFlags)[0]
                 self.SetActiveStatusText("Wrapped around to find '%s'"%self.findStr,1)
             if position==-1 and message and self.numberMessages<1:
                 #not found
