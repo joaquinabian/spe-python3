@@ -77,7 +77,7 @@ BITMAP_TYPE = {
                 ".gif": wx.BITMAP_TYPE_GIF,      # Save a GIF file.
                 ".jpg": wx.BITMAP_TYPE_JPEG,     # Save a JPG file.
                 ".pcx": wx.BITMAP_TYPE_PCX,      # Save a PCX file.
-                ".png": wx.BITMAP_TYPE_PNM,      # Save a PNG file.
+                ".png": wx.BITMAP_TYPE_PNG,      # Save a PNG file.
                 ".pnm": wx.BITMAP_TYPE_PNM,      # Save a PNM file.
                 ".tif": wx.BITMAP_TYPE_TIF,      # Save a TIF file.
                 ".xbm": wx.BITMAP_TYPE_XBM,      # Save an X bitmap file.
@@ -99,7 +99,7 @@ def doPrint(dc,canvas):
     maxX = maxX + (2 * marginX)
     maxY = maxY + (2 * marginY)
     # Get the size of the DC in pixels
-    (w, h) = dc.GetSizeTuple()
+    (w, h) = dc.GetSize()
     # Calculate a suitable scaling factor
     scaleX = float(w) / maxX
     scaleY = float(h) / maxY
@@ -112,7 +112,7 @@ def doPrint(dc,canvas):
     dc.SetUserScale(actualScale, actualScale)
     dc.SetDeviceOrigin(int(posX), int(posY))
     canvas.Redraw(dc)
-    dc.DrawText("Drawn by SPE [http://pythonide.stani.be]", marginX/2, maxY-marginY)
+    dc.DrawText("Drawn by SPE [http://pythonide.stani.be]", marginX//2, maxY-marginY)
 
 class PrintCanvas(ogl.ShapeCanvas):
     def __init__(self, *args, **keyw):
@@ -239,19 +239,19 @@ class Printout(wx.Printout):
         self.canvas = canvas
 
     def OnBeginDocument(self, start, end):
-        return self.base_OnBeginDocument(start, end)
+        return wx.Printout.OnBeginDocument(self, start, end)
 
     def OnEndDocument(self):
-        self.base_OnEndDocument()
+        wx.Printout.OnEndDocument(self)
 
     def OnBeginPrinting(self):
-        self.base_OnBeginPrinting()
+        wx.Printout.OnBeginPrinting(self)
 
     def OnEndPrinting(self):
-        self.base_OnEndPrinting()
+        wx.Printout.OnEndPrinting(self)
 
     def OnPreparePrinting(self):
-        self.base_OnPreparePrinting()
+        wx.Printout.OnPreparePrinting(self)
 
     def HasPage(self, page):
         if page <= 2:
