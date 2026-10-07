@@ -416,3 +416,45 @@ The final combined harness finished with zero captured callback exceptions and M
 UTF-8 subprocess launch/output decoding and the pending sidebar deletion blocker are fixed. Each stream's byte order is retained; stdout is polled/rendered before stderr in each pass as before. There is no guarantee of total chronological ordering across two separate pipes. In the artificial one-byte-read test, stdout/stderr text can interleave in the combined HTML view; independent stream assertions verified correct decoded text. No line-buffering/reordering redesign was introduced.
 
 The screenshot exposed a separate font-rendering limitation: some Greek/euro glyphs appear missing or as bars/blocks with the existing Output tab Courier font, despite Output.ToText containing the correct Unicode characters. This is not a decoding failure. Stopped without changing font selection/rendering or modernizing the UI. Review a narrowly scoped Unicode-capable monospace font/fallback while preserving the existing Output appearance and layout. No font change was made in this pass.
+
+
+## Milestone accepted and font scope clarified (2026-10-07)
+
+The user considers edit -> save -> run -> output complete. Missing glyphs in the existing Courier font are a known non-blocking display limitation; they are acceptable for now. English and Spanish are the primary intended source-code languages. Font selection, configuration, and fallback must remain unchanged at this stage. This supersedes the font review recommendation at the end of pass 8. Continue with concrete runtime compatibility blockers only.
+
+
+## Pass 9: file dialogs, Spanish search, and Preferences (2026-10-07)
+
+Continued after the user accepted the edit -> save -> run -> output milestone and explicitly classified the Courier missing-glyph issue as non-blocking. Font selection, font configuration, and fallback behavior were not changed or exercised. English and Spanish remain the primary intended source-code languages.
+
+### Files changed and exact compatibility changes
+
+- `Child.py`: in saveAs only, replaced removed wx.SAVE, wx.OVERWRITE_PROMPT, and wx.CHANGE_DIR with wx.FD_SAVE, wx.FD_OVERWRITE_PROMPT, and wx.FD_CHANGE_DIR. Other file-dialog call sites were not swept or refactored.
+- `Parent.py`: in the ordinary Open action only, replaced wx.OPEN|wx.MULTIPLE with wx.FD_OPEN|wx.FD_MULTIPLE. In onFind, replaced len(GetText()) with GetTextLength(), retained both positions returned by FindText, and used the returned match end for selection. The wrap search's limit uses the UTF-8 byte length of the search string, capped at the document byte length. This narrowly fixes Scintilla byte-position versus Python Unicode-character-count mismatches when searching after or within accented text. Other Replace/Replace All algorithms and flags remain unchanged and were not broadly refactored.
+- `dialogs/preferencesDialog.py`: fixed the reached Python 2 print statement; imported configparser as ConfigParser; imported the same EditableListBox control from wx.adv instead of wx.gizmos; materialized DI.keys() as a list before remove/sort; replaced removed StringType/UnicodeType value checks with the Python 3 str type. Three reached FlexGridSizer declarations (grid_sizer_4, grid_general, grid_sizer_2) now have automatic rows (0), retaining their existing column counts, item order, spacing, and layout, because the legacy fixed row counts were smaller than the actual control counts and Phoenix asserted. Removed ignored ALIGN_RIGHT flags from the two EXPAND entries in paths_Sizer. No static-box control reparenting, settings redesign, or font code changes.
+- `SPE_PORT_CHANGELOG.md`: recorded milestone acceptance, the known non-blocking glyph limitation, fixes, tests, and the new load-boundary checkpoint.
+
+### Incremental tests and runtime state
+
+Used a temporary event-loop harness that ran SPE.py --debug in the current Windows Python 3.12 / wxPython 4.3.1 environment. After each concrete blocker, reran startup and preceding affected tests. Native Windows file dialogs were opened and cancelled using the window close action; a failed initial attempt to use EndModal directly on the native FileDialog produced a harness-only assertion, so the harness used native close instead. This did not require any application event-flow changes.
+
+Passed:
+
+- Save As dialog construction/display and cancellation, without writing a file.
+- Ordinary Open dialog construction/display and cancellation, without changing the document.
+- Finding ASCII `target` near the end of a document after multiple accented characters. This initially selected the wrong text because the search limit used a Unicode character count rather than a Scintilla byte count.
+- Finding and selecting the complete three-character Spanish accented test string, rather than truncating its multibyte representation.
+- Preferences construction, population, visibility, and cancellation without saving any preferences. Its existing controls/tabs remain. Font buttons and configuration were not touched.
+- Main application shutdown after the test sequence returned MainLoop 0.
+
+Non-blocking wx static-box child-parent diagnostics and one native SetFocus diagnostic appeared during Preferences construction. They were not turned into a reparenting/layout redesign. Preferences Save/Defaults and all other settings actions were not exhaustively tested. Linux runtime remains untested; shared fixes preserve its split-interface path. Windows MDI remains intact. No macOS or third-party code changes.
+
+All three changed source files parse under Python 3.12; final diff whitespace validation passes. The temporary harness and loading fixture were removed. The earlier edit/save/run/output milestone remains accepted; this pass did not change output decoding or Courier behavior.
+
+### Next review checkpoint: encoding-aware source loading fallback
+
+Created a valid UTF-8-declared Python file containing curly quotation marks in a string and opened it through Parent.openList. The preliminary open(fileName, newline="") uses the Windows locale encoding; it cannot decode that particular UTF-8 content, so its broad exception handler supplies empty source. Child.revert then reads raw bytes and, with ConvertTabsToSpaces enabled, calls bytes.replace with str arguments. Opening fails with TypeError: a bytes-like object is required, not str at Child.py line 1269.
+
+A safe fix must address the shared load boundary, not just the first bytes.replace argument: getEncoding currently assumes text, and initial dosLines detection has already received empty source. The existing fallback also rereads through codecs after a raw tab-conversion attempt. Moving conversion and decoding can change the existing preference behavior, while decoding before reading the declaration can select the wrong codec.
+
+Stopped for review before changing that fallback. Recommended next scope: read the file bytes without locale decoding, determine encoding from the source declaration/BOM or the existing application preference, decode once into Unicode, and preserve original newline detection before populating the editor. Explicitly decide where the ConvertTabsToSpaces preference applies so it is not silently bypassed by a second read. Preserve declared/configured legacy encodings and define decoding-error behavior without substituting an empty document or silently forcing UTF-8. Keep the current Parent/Child architecture and UI. No loader fallback or encoding-policy changes were made in this pass.

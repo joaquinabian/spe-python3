@@ -433,7 +433,7 @@ class Panel(wx.Notebook):
         dlg = wx.FileDialog(self, "Choose a file - www.stani.be",
             defaultDir=defaultDir, defaultFile="",
             wildcard=info.WILDCARD,
-            style=wx.OPEN|wx.MULTIPLE)
+            style=wx.FD_OPEN|wx.FD_MULTIPLE)
         if dlg.ShowModal() == wx.ID_OK:
             fileList = dlg.GetPaths()
             if fileList and self.app.children:
@@ -1188,11 +1188,11 @@ Please report these details and operating system to %s."""%(message,INFO['author
             except:
                 pass
             current=source.GetCurrentPos()
-            position=source.FindText(current,len(source.GetText()),self.findStr,
-                    self.stcFindFlags)[0]
+            position, matchEnd=source.FindText(current,source.GetTextLength(),self.findStr,
+                    self.stcFindFlags)
             if position==-1:#wrap around
                 self.wrapped=1
-                position=source.FindText(0,current+len(self.findStr),self.findStr,self.stcFindFlags)[0]
+                position, matchEnd=source.FindText(0,min(source.GetTextLength(),current+len(self.findStr.encode("utf-8"))),self.findStr,self.stcFindFlags)
                 self.SetActiveStatusText("Wrapped around to find '%s'"%self.findStr,1)
             if position==-1 and message and self.numberMessages<1:
                 #not found
@@ -1204,7 +1204,7 @@ Please report these details and operating system to %s."""%(message,INFO['author
                 line    = source.LineFromPosition(position)
                 source.EnsureVisible(line)
                 source.GotoPos(position)
-                source.SetSelection(position,position+len(self.findStr))
+                source.SetSelection(position,matchEnd)
             return position
 
     def onFindClose(self,event):

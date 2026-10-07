@@ -5,8 +5,9 @@
 2. Append the name to the VALUES list
 3. Add an entry in _spe/default.cfg"""
 
-import ConfigParser,os,types
-from wx.gizmos import EditableListBox
+import configparser as ConfigParser
+import os,types
+from wx.adv import EditableListBox
 import wx
 import sm.wxp.smdi as smdi
 
@@ -182,15 +183,15 @@ class Create(wx.Dialog):
         Guides = wx.StaticBoxSizer(self.Guides_staticbox, wx.VERTICAL)
         eol = wx.BoxSizer(wx.HORIZONTAL)
         tabsWhiteSpaces = wx.StaticBoxSizer(self.tabsWhiteSpaces_staticbox, wx.VERTICAL)
-        grid_sizer_2 = wx.FlexGridSizer(4, 1, 4, 4)
+        grid_sizer_2 = wx.FlexGridSizer(0, 1, 4, 4)
         width = wx.BoxSizer(wx.HORIZONTAL)
         GeneralEditor = wx.StaticBoxSizer(self.GeneralEditor_staticbox, wx.VERTICAL)
-        grid_general = wx.FlexGridSizer(4, 2, 4, 4)
+        grid_general = wx.FlexGridSizer(0, 2, 4, 4)
         generalSizer = wx.FlexGridSizer(10, 1, 4, 4)
         sizer_3 = wx.StaticBoxSizer(self.sizer_3_staticbox, wx.HORIZONTAL)
         grid_sizer_5 = wx.FlexGridSizer(4, 2, 4, 4)
         grid_sizer_3 = wx.FlexGridSizer(4, 1, 4, 4)
-        grid_sizer_4 = wx.FlexGridSizer(3, 2, 4, 4)
+        grid_sizer_4 = wx.FlexGridSizer(0, 2, 4, 4)
         sizer_1.Add((4, 4), 0, 0, 0)
         sizer_2.Add((4, 4), 0, 0, 0)
         generalSizer.Add(self.Backup, 0, wx.LEFT|wx.TOP, 4)
@@ -288,7 +289,7 @@ class Create(wx.Dialog):
         terminal_Sizer.Add(self.TerminalRunExit, 0, wx.RIGHT|wx.TOP|wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 5)
         terminal_Sizer.AddGrowableCol(1)
         terminal_Label.Add(terminal_Sizer, 1, wx.EXPAND, 0)
-        paths_Sizer.Add(terminal_Label, 1, wx.EXPAND|wx.ALIGN_RIGHT, 0)
+        paths_Sizer.Add(terminal_Label, 1, wx.EXPAND, 0)
         html_Sizer.Add(self.label_webBrowser, 0, wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
         html_Sizer.Add(self.WebBrowser, 0, wx.RIGHT|wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 5)
         html_Sizer.Add(self.label_pythonDocs, 0, wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -297,7 +298,7 @@ class Create(wx.Dialog):
         html_Sizer.Add(self.WxPythonDocs, 0, wx.RIGHT|wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 5)
         html_Sizer.AddGrowableCol(1)
         html_Label.Add(html_Sizer, 1, wx.EXPAND, 0)
-        paths_Sizer.Add(html_Label, 1, wx.EXPAND|wx.ALIGN_RIGHT, 0)
+        paths_Sizer.Add(html_Label, 1, wx.EXPAND, 0)
         self.Paths.SetSizer(paths_Sizer)
         self.notebook_1.AddPage(self.General, _("General"))
         self.notebook_1.AddPage(self.Editor, _("Editor"))
@@ -319,7 +320,7 @@ class Create(wx.Dialog):
 
     def __fill(self):
         #mdi
-        keys = smdi.DI.keys()
+        keys = list(smdi.DI.keys())
         keys.remove('<default>')
         keys.sort()
         for key in keys:
@@ -332,11 +333,11 @@ class Create(wx.Dialog):
     def _update(self,name):
         """Update one automatically"""
         item=self.__dict__[name]
-        if type(item.GetValue()) in [types.StringType,types.UnicodeType]:
+        if type(item.GetValue()) is str:
             try:
                 item.SetValue(self.parent.get(name))
             except:
-                print 'SPE.dialogs.preferencesDialog.py error: can not set value',self.parent.get(name)
+                print('SPE.dialogs.preferencesDialog.py error: can not set value',self.parent.get(name))
         else:
             item.SetValue(self.parent.getValue(name))
 

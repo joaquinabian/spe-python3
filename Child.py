@@ -382,7 +382,7 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
         dlg             = wx.FileDialog(self, "Save As - www.stani.be",
             defaultDir  = defaultDir,
             wildcard    = info.WILDCARD,
-            style       = wx.SAVE|wx.OVERWRITE_PROMPT|wx.CHANGE_DIR)
+            style       = wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT|wx.FD_CHANGE_DIR)
         if dlg.ShowModal() == wx.ID_OK:
             path        = dlg.GetPaths()[0]
             self.save(path)
