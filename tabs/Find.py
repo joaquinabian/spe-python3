@@ -324,10 +324,10 @@ class FindReplaceEngine:
         viewResults = []
         for s, e in self._findAll(text, pattern, selectionStart, selectionStart):
             t = text[:s]
-            lineNo = string.count(t, '\n')
-            left = max(string.rfind(t, '\n'), 0) + 1
+            lineNo = t.count('\n')
+            left = max(t.rfind('\n'), 0) + 1
             index = s - left
-            line = string.split(text[left:], "\n", 1)[0]
+            line = text[left:].split("\n", 1)[0]
             viewResults.append((lineNo+1, index+1, line))
         return viewResults
 
@@ -528,7 +528,7 @@ class FindReplaceEngine:
 ##            print 'Problem saving finder options: %s' % err
 
     def _getValidFilename(self, filename):
-        protsplit = string.split(filename, '://')
+        protsplit = filename.split('://')
         if len(protsplit) > 1:
             if protsplit[0] != 'file' or len(protsplit) > 2:
                 wx.LogWarning('%s not searched, only local files allowed'%filename)
@@ -538,6 +538,7 @@ class FindReplaceEngine:
 
 class FindReplace(FindReplaceEngine):
     def findAllInFiles(self, names, view, pattern, path=''):
+        from Child import readSource
         self.addFind(pattern)
         results = {}
         # Setup progress dialog
@@ -551,7 +552,8 @@ class FindReplace(FindReplaceEngine):
             for i in range(len(names)):
                 filename = self._getValidFilename(names[i])
                 if not (filename and os.path.exists(filename)): continue
-                results[names[i]] = self._findAllInSource(open(filename).read(), pattern, 0)#(lineNo+1, index+1, line)
+                source, encoding = readSource(filename, view.panel.defaultEncoding)
+                results[names[i]] = self._findAllInSource(source, pattern, 0)#(lineNo+1, index+1, line)
                 if not dlg.Update(i, "Searching in file '%s'"%filename):
                     try:
                         view.panel.SetStatusText("Search aborted",1)

@@ -623,3 +623,131 @@ The tested built-in browser, syntax checks/indicators, completion, call tips, do
 Testing used actual controls and their handlers/programmatic selection, not exhaustive physical mouse/keyboard interaction. The documentation Save/import confirmation dialog, every hyperlink, arbitrary third-party signatures, all nested/decorated/async declaration forms, every completion prefix, and all background-thread timing interleavings were not exhaustively tested. No claim is made that optional PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki or Blender integration is available. Existing deprecation/duplicate-image diagnostics and the accepted Courier missing-glyph limitation remain non-blocking. Temporary harness/profile/log files were removed. Changed modules parse under Python 3.12 and git diff --check passes.
 
 All changed application paths use shared Python/Phoenix APIs and preserve the Windows MDI/Linux split architecture. Linux remains a supported but wholly runtime-untested target pending real Ubuntu validation. No Linux environment was installed or tested. macOS remains out of scope.
+
+## Pass 15: core UI inventory, incremental checks, documentation-server checkpoint (2026-10-07)
+
+### Inventory of normal built-in UI
+
+Inventory was collected from the running Windows MDI session and the existing menu/toolbar/dialog source before testing. Optional actions may be visible in the menus but are deliberately excluded from core execution.
+
+| Area | Existing built-in controls/commands |
+| --- | --- |
+| Main tabs, in startup order | Shell, Locals, Session, Output, Find, Browser, Recent, Todo, Index, Notes, Donate. Blender tab is absent outside Blender. |
+| Document main pages | Source, Uml, PyDoc. Uml is SPE's built-in diagram using Phoenix OGL, not an optional plugin. |
+| Document sidebar | Explore, Todo, Index, Notes, Check, Browser. Check's control is constructed, but invoking PyChecker remains deferred. |
+| File menu | New; Open file(s); Save; Save As; Save a Copy; Open Workspace; Save Workspace; Save Workspace As; Save Uml As; Page Uml Setup; Print Uml Preview; Print Uml; Close; Exit; Remember open file(s). Recent files are a separate tab. |
+| Edit menu | Undo, Redo, Cut, Copy, Paste, Execute in shell, Find & replace, Find Next, Go to line, Browse source, Auto complete, Show docstring, Indent, Dedent, Comment, UnComment, Insert separator, Insert signature, Preferences. |
+| View menu | Whitespace, Indentation guides, Right edge indicator, End-of-line marker, As notebook, As columns, As rows, Sidebar, Shell, Clear output, Refresh. |
+| Core Tools actions | Run/Stop, Run without arguments/Stop, Run in terminal, Run in terminal without arguments, Run in terminal without arguments & exit, Import in shell, Browse object with PyFilling, Browse folder, Open terminal. PyFilling is supplied by current wxPython, not a bundled optional legacy tool. |
+| Links menu | SPE homepage, SPE forum, Python homepage/announcements/cookbook/daily/package index, author's homepage. These are external URL launchers. |
+| Core Help actions | Manual, Keyboard shortcuts, Python library, Python reference, Python documentation server, wxWindows documentation, Donate, About. Manual/Keyboard shortcuts menu handlers launch external URLs; they do not call the old local helpShortcutsDialog implementation. |
+| Toolbar core actions | New, Open, Save, Save As, Save workspace, Remember open files, Undo, Redo, Find & replace, Go to line, Browse source, Indent, Dedent, Comment, UnComment, Sidebar, Shell, Run/Stop, Import, Donate. WinPdb/PyChecker buttons are visible but deferred; Blender buttons are conditional and absent. |
+| Built-in dialogs/workflows | Native file open/save/copy/workspace pickers; directory picker; Find/Replace; Go To Line text entry; unsaved/reload/delete/error confirmations; Preferences (including style/font/path pickers); separator/color picker; run arguments and terminal arguments; generic SPE HTML/About; PyFilling frame; UML export, page setup, preview/printing. |
+
+Reload is implemented through document revert/external-change handling, not a dedicated normal File-menu item. Line numbers and folding are provided by editor preferences/margins/handlers, though the normal View menu has no explicit Line Numbers or Folding item. Separate Find Previous, duplicate/delete-line, and case-conversion menu entries were not found in this menu inventory; native Scintilla text commands/default shortcuts are separate and remain to be checked. The normal Find/Replace dialog explicitly disables the Up/Down option with FR_NOUPDOWN. Window Next/Previous handlers exist for other interface modes; SPE removes the custom Window menu for this Windows MDI configuration. No new commands were added to fill absent entries.
+
+Visible optional entries excluded from execution: WinPdb run/debug, Kiki, wxGlade, XRCed, PyChecker/PyChecker2, conditional Blender integration, and wxGlade help links. Other optional legacy tools remain deferred. No optional source was modified.
+
+### Files changed and exact fixes
+
+- sm/wxp/realtime.py: Index population failed first in InsertStringItem on self.items.has_key, then in SetStringItem on text.has_key. Replace only those two calls with Python 3 dictionary membership. Preserve the shared realtime list-control model/update behavior; other unreached legacy methods were not broadly ported.
+- tabs/Browser.py: folder addition failed on types.ListType/ TupleType. Replace that test with isinstance(folders, (list, tuple)), preserving single-folder wrapping.
+- tabs/Find.py: built-in Find-panel searching reached removed string.split/count/rfind functions. Replace those calls in _getValidFilename and _findAllInSource with str methods. The integrated search engine attribution remains unchanged; only code needed by the normal Find tab was touched. Other engine methods unrelated to the tested workflow were not ported.
+- Child.py: Save a Copy failed on removed wx.SAVE/OVERWRITE_PROMPT/CHANGE_DIR constants. Use wx.FD_SAVE/FD_OVERWRITE_PROMPT/FD_CHANGE_DIR with existing dialog behavior.
+- Parent.py: Workspace Save As and Open failed separately on legacy file-dialog constants. Use FD_SAVE/FD_OVERWRITE_PROMPT/FD_CHANGE_DIR and FD_OPEN in those two boundaries only.
+- dialogs/separatorDialog.py: insertion failed because Phoenix Colour.Get includes alpha and the existing RGB formatter expects three components. Read Red/Green/Blue explicitly, preserving the existing HTML color/separator format.
+- dialogs/speDialog.py: About attempted to load images/spe_about.jpg, which does not exist; the resource lives in skins/default. Native wx logging produced a Spe Error dialog that remained after main-frame closure. Route this SPE-owned bitmap through parent.app.bitmap so the existing resource/skin lookup resolves it. Native wx.Bitmap remains unmodified. About subsequently completed without the missing-resource error window.
+- SPE_PORT_CHANGELOG.md: inventory, verification, limits and checkpoint. Seven application files changed; no third-party wxPython files, optional plugins, persistence formats, fonts, or UI architecture were changed.
+
+### Incremental Windows verification
+
+Temporary harness runs launched SPE.py --debug in the real wx loop on Windows with Python 3.12 / wxPython 4.3.1. Fresh isolated profiles and source fixtures stayed inside the project root. Each concrete failure stopped its run; its minimal fix was followed by a rerun of the affected path. Fixture included imports, a class/method/function, a TODO comment and Spanish non-ASCII source text. Tests used controls and existing command handlers; they were not an exhaustive physical mouse/keyboard exercise.
+
+- New through the menu handler, save with explicit fixture path, and menu Save: resulting UTF-8 source contents matched. Reload/revert restored saved source; reopening an already-open path did not duplicate its document; saving added its Recent entry.
+- Selection, menu Indent/Dedent, Comment/UnComment and Undo/Redo: text/indentation assertions passed. Menu Cut/Copy/Paste inserted/removed the expected clipboard text. The test temporarily used the system clipboard.
+- View whitespace/indentation/edge/EOL switches invoked with both boolean values; EOL state and line-number margin widths were checked. Line numbers were exercised through the existing handler, since they have no normal menu item. Sidebar and Shell each toggled twice; Refresh and As columns/rows/notebook invoked without Python/Phoenix exceptions. These layout invocations do not establish that every arrangement is geometrically correct: existing As rows calls frame.Maximize rather than Tile, which remains a separate behavior issue requiring validation/review, not a compatibility fix silently made here.
+- Every standard startup tab listed above was selected in the real notebook; no callback exceptions after fixes. This establishes selection/rendering/event reachability, not full functionality of every action within each tab. Every document sidebar page was selected without invoking optional PyChecker. Todo and Index generated nonempty lists; simple UML diagram generation through DrawUml completed without exceptions.
+- Browser added the isolated folder and listed the fixture. Find panel searched disk-backed files for ASCII Example, produced results, and cleared them. This does not establish Unicode search/encoding correctness or cancellation/regex/wildcard/depth behavior; those remain pending.
+- Open, Save As and Save a Copy used real native FileDialog constructors, with only ShowModal/GetPath(s) controlled by the harness to select isolated fixture paths. Verified renamed document path and byte-identical copy. The picker navigation/overwrite confirmation itself was not manually tested.
+- Separator dialog constructed and its actual OnInsert inserted Prueba ñ. Color-picker interaction was not exhaustively tested.
+- Workspace Save As, Open, Save, Remember toggle twice, and notes/state loading passed. Set globalNotes=False in the isolated test profile to exercise named-workspace notes; restored workspace notes á é ñ ü exactly. The existing default globalNotes=True intentionally reads notes from default state rather than the named workspace; no semantics were changed. Several documents were open during these paths.
+- Menu Go To Line navigated to line 4 using an injected text-entry answer. Find Next selected both expected matches. Find/Replace dialog appeared and was destroyed. Two single Replace operations produced the exact expected text; the final not-found message was captured. Replace All and Unicode replacement cases remain pending.
+- Preferences and About constructed and were briefly shown/hidden through a controlled ShowModal returning Cancel. Preferences Save behavior was verified in an earlier milestone; it was not repeated in this pass. Keyboard shortcuts menu is an external link: its target dispatch was captured, not a local shortcuts-dialog test or online-content validation. No claim is made that legacy online help URLs still work.
+- Toolbar EVT_TOOL dispatch for Comment, UnComment, Indent and Dedent reached the existing handlers. Other toolbar actions have been inventoried but were not all dispatched before the checkpoint.
+- Menu Close removed a document. A Recent click reopened a known existing renamed fixture. Normal main-window Close afterward returned MainLoop 0 with no captured callback exceptions and no remaining About resource-error window. Earlier temporary harness interruptions were used to diagnose a test assertion/profile setup or the missing-resource window; they are not clean-shutdown test results.
+
+### First non-trivial behavior decision: Python documentation server
+
+Invoked the existing Help > Python documentation server handler. To capture the result without leaving an orphan server/browser, the harness replaced os.spawnl with synchronous subprocess.run of the exact requested child command and captured messageHtml's URL. The application code still launches the current interpreter on pydoc.py with -g, then opens http://localhost:7464/.
+
+Python 3.12 pydoc -g exited with code 0 and printed command usage. It did not launch the legacy pydoc GUI or start an HTTP server. Successful spawning/exit status therefore does not establish intended behavior. The local Python 3.12 pydoc usage documents -p for an HTTP server, -n for a hostname and -b for browser-based browsing. The removed GUI workflow cannot be restored by merely renaming a wx API.
+
+Stopped here as requested, without changing documentation-server behavior. Recommended direction for review: replace the obsolete pydoc GUI invocation with a loopback-only pydoc HTTP subprocess, retaining the existing Help command/browser integration. Decide whether to retain fixed port 7464 or choose a dynamic port, and whether the child should remain independently running (as the old P_NOWAIT behavior permits) or be shut down with SPE. Startup readiness, port conflicts and failure reporting should be explicit rather than opening a dead URL. This checkpoint is about replacement behavior/lifecycle; it is not an optional legacy-tool port.
+
+### Remaining coverage and deliberately deferred functionality
+
+The systematic core UI pass is INCOMPLETE at this checkpoint. Still pending in this pass: full action behavior for Locals/Session/Shell/Output and Donate beyond selection (earlier Shell/Output milestones retain their narrower verified results); all toolbar commands; real modal picker/confirmation interaction; Replace All and Unicode file-search/replacement correctness; explicit built-in text duplicate/delete/case actions where reachable; signature insertion; full multi-document switching/layout assertions; all Preferences subdialogs; Execute/Import in shell; Run/Stop/arguments and terminal actions; PyFilling; browse-source/folder menu dispatch; UML inheritance/export/page setup/preview/printing; Help library/reference/wx documentation and external link availability. Named workspace close/restart and malformed named-workspace recovery were not comprehensively tested here. Do not infer these from tab selection or earlier isolated tests.
+
+Known checkpoint issue: obsolete pydoc -g prevents the documentation-server command's intended behavior. Additional inspection concerns left untouched: As rows uses Maximize; unreached realtime list/Find engine methods still contain legacy APIs; Find disk reads still use locale text decoding; Unicode replacement selection lengths require further checks. These are pending investigation, not claims of completed fixes or exhaustive failure reproduction.
+
+All optional PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki, Blender and other legacy plugin functionality stays deliberately deferred. No normal tested command unexpectedly required porting those tools. Linux remains a supported but runtime-untested target, with both existing interface paths preserved. macOS remains out of scope. No dependencies were added. Changed modules parse under Python 3.12 and git diff --check passes. Temporary harness/profile/log files were removed after verification; the user's normal profile was not used or rewritten.
+
+## Pass 16: managed pydoc subprocess; resumed core pass and native case-conversion checkpoint (2026-10-07)
+
+### Files changed in this pass
+
+- Parent.py: replace only the obsolete documentation-server launch with managed pydoc subprocess state/readiness/cleanup and call its cleanup during accepted normal application shutdown. Standard-library queue, re, subprocess and threading support this boundary. Earlier uncommitted compatibility fixes from Pass 15 remain; they were not broadened.
+- tabs/Find.py: the normal Find-panel disk search now reuses Child.readSource instead of a locale-based open(filename).read(). This was prompted by a reproduced missed match in valid UTF-8 Python source containing mañana.
+- SPE_PORT_CHANGELOG.md: implementation, tests, current checkpoint and coverage limits. No optional legacy tools, third-party wxPython code, font behavior or interface architecture changed. No dependencies added.
+
+### Documentation-server behavior
+
+SPE launches [sys.executable, -u, -m, pydoc, -n, 127.0.0.1, -p, 0] using subprocess.Popen. The interpreter is the one running SPE. The -u option makes pydoc's startup URL available immediately through a pipe. Port selection and HTTP serving belong entirely to Python's existing pydoc server; SPE implements no HTTP server.
+
+stdin is a retained pipe so pydoc's command loop does not receive premature EOF and exit. stdout and stderr are merged into a startup-output pipe decoded as UTF-8 with replacement for invalid diagnostic bytes. A copied child environment sets PYTHONIOENCODING=utf-8:replace; SPE's application/file encoding preferences and global environment are unchanged. CREATE_NO_WINDOW is used only when info.WIN is true; Linux receives no Windows creation flags.
+
+A daemon reader thread performs blocking pipe reads and sends lines to a queue. A wx.CallLater poll every 50 ms processes that queue on the GUI thread. It accepts pydoc's Server ready at line only for an explicit http://127.0.0.1:<valid-port>/ URL, and passes that actual URL to the existing messageHtml/browser mechanism. No guessed port, custom server, or blocking readiness wait was introduced. Pending startup attempts are reused without spawning another child. Once ready, another invocation opens the same URL if the retained process is still alive. If it has exited, stale state is cleaned up and a new pydoc process is launched.
+
+Startup is bounded by a 10-second readiness timeout. Popen errors produce a useful existing SPE error message; early process exit reports its code and available diagnostics; timeout reports the deadline and available diagnostics. Failed/half-started children are terminated and reaped before the error is reported, and handles/URL/pending poll state are reset. The pipe reader owns closing stdout; cleanup closes stdin after process termination.
+
+Normal accepted shutdown stops any pending poll, clears active state, terminates a live child, and waits up to 0.5 seconds. It kills only after that wait times out, then waits up to 1 second. This deliberately uses process termination rather than writing an interactive quit command; no SPE process is left waiting for pydoc stdin. These brief waits are shutdown/failure cleanup, not readiness waits. Cleanup is placed after unsaved-document confirmation, so Cancel leaves both SPE and its documentation server running. Deferred polls also guard against dead frames or obsolete process handles.
+
+### Windows documentation-server tests
+
+Temporary harness runs launched SPE.py --debug in real Windows wx event loops with an isolated profile inside the project root. Browser dispatch was collected by replacing webbrowser.open at the final browser boundary; the actual Parent.messageHtml path was still called. This verifies dispatch/URL and real HTTP contents, not physical interaction with an external browser window.
+
+- Invoked Help > Python documentation server; verified the exact command starts with sys.executable, explicit loopback and port 0, and conditional CREATE_NO_WINDOW is present on Windows.
+- The GUI handler returned in under one second; a separate GUI timer fired while startup/readiness was pending. The reported URL contained a nonzero dynamically selected port.
+- Real HTTP GET to that URL returned pydoc's Index of Modules/Built-in Modules; GET to math.html returned usable documentation containing sqrt. The response body was decoded as UTF-8.
+- Invoking during startup kept the same process handle. Invoking after readiness reused the same PID/URL and dispatched the URL again without creating another process.
+- Enumerated native windows and found no visible ConsoleWindowClass owned by the child, in addition to asserting CREATE_NO_WINDOW. No callback exceptions were captured.
+- Normal SPE Close returned MainLoop 0; every tracked pydoc child had exited. Windows TerminateProcess yields exit code 1 here; it is termination evidence, not a pydoc startup failure.
+- A separate fresh SPE process using the same isolated profile started a new server successfully. Another run deliberately terminated the child while SPE remained running; the next Help invocation created a new process/URL and its HTTP index responded.
+- With an unsaved test document, Cancel vetoed closing SPE; its frame remained live and pydoc still responded. A subsequent accepted normal close terminated it.
+- Injected FileNotFoundError from Popen reported the launch failure without an active child. A real replacement test child emitted an injected error and exited with code 2; startup reported that code/diagnostic, dispatched no URL and retained no process. A silent real child tested the timeout path by advancing the recorded startup timestamp: it was terminated/reaped, the timeout was reported, GUI timer still fired, and no URL was dispatched.
+- A narrow cleanup test with a simulated stubborn process verified Stop poll -> terminate -> wait(0.5) -> kill -> wait(1) -> close stdin, with active handle/URL reset. Kill fallback was not needed for the real Windows pydoc children.
+- Completed normal/failure/timeout/restart/Cancel runs returned MainLoop 0 with no captured callback exceptions or live tracked children. Error messages were captured in automated tests instead of manually dismissing repeated native dialogs.
+
+The documentation-server checkpoint from Pass 15 is resolved under the user's specified replacement policy. External browser rendering/manual navigation remains a manual-test limit; the real server's index and module pages and existing browser dispatch were verified. Linux runtime remains untested.
+
+### Resumed built-in core UI pass
+
+Used a fresh isolated UTF-8 source fixture containing imports, Base/Child classes, a method, Spanish docstrings/text, a function and a TODO comment.
+
+- Find in Files originally returned zero matches for mañana, despite the file opening correctly in SPE. The locale preliminary read silently reinterpreted UTF-8 bytes. Reusing the existing readSource boundary restored exactly one match with the correct Spanish result text; Clear worked. Python .py/.pyw search now inherits BOM/PEP 263/default UTF-8 decoding; non-Python files inherit SPE's configured-encoding rules from that helper. Search does not write files or change a document's retained encoding. This does not introduce heuristic detection or redesign search. Unreadable/invalid-file search recovery, cancellation, and every encoding variant remain untested here.
+- ASCII Replace All changed uno uno uno to dos dos dos exactly.
+- A single selected replacement changed uno fin to mañana fin without an exception. This does not prove every Unicode selection-length/Replace All case; those remain pending.
+
+### Next non-trivial behavior checkpoint: native Unicode case conversion
+
+The next basic text-action test selected hola ñ and invoked existing native Scintilla STC_CMD_UPPERCASE. It produced HOLA ñ, leaving ñ unchanged rather than producing HOLA Ñ. The same operation on a newly constructed plain wx.stc.StyledTextCtrl, without SPE editor customization, produced exactly the same result. Both controls reported code page 65001 (UTF-8). Thus merely enabling UTF-8 or changing SPE string decoding does not resolve the observed behavior.
+
+Stopped at this checkpoint, preserving the current native case-conversion behavior. No third-party wxPython patch, replacement text command, locale/font change or new shortcut/menu entry was introduced. The normal SPE menu has no explicit uppercase/lowercase item; this test exercised its existing underlying native editor command, as requested for built-in text operations where provided.
+
+Review whether to accept/document the native non-ASCII case-conversion limitation or authorize a narrowly scoped SPE-owned Unicode case-conversion override. Such an override would change native editing behavior and needs deliberate scope rather than a speculative Python 2 compatibility fix. ASCII uppercase conversion works in the reproduced test; not every non-ASCII character or lowercase case has been tested. This is an editing limitation, separate from the accepted Courier missing-glyph display limitation.
+
+### Current state and remaining coverage
+
+Managed documentation serving is working in the verified Windows paths, and UTF-8 Spanish Find in Files is restored. The overall built-in core UI pass is still INCOMPLETE. The resumed harness stopped at case conversion; later queued Execute/Session, UML inheritance and export tests were not reached and must not be counted as passed. Native duplicate/delete-line tests were also not reached after the uppercase assertion. Pass 15's other pending coverage remains pending, including full toolbar dispatch, all preferences subdialogs, real picker/confirmation interaction, terminal/import/PyFilling workflows, complete multi-document/layout assertions, full UML export/printing, and online help availability. The As rows inspection concern and unreached legacy helper methods were not changed.
+
+PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki, Blender and other optional legacy tools remain deliberately deferred. No optional tool was required by these tests. Shared Windows/Linux paths remain intact; Linux is supported but entirely runtime-untested until real Ubuntu validation. macOS remains out of scope. All temporary harnesses/profiles/logs were removed. Changed modules parse under Python 3.12; git diff --check passes. Earlier uncommitted Pass 15 changes are retained.

@@ -116,4 +116,5 @@ class wxDialog1(wx.Dialog):
 
 
 def wxColour2html(c):
-    return ('#%s%s%s'%tuple(map(lambda x:sm.zfill(hex(x)[2:],2),c.Get()))).upper()
+    return ('#%s%s%s'%tuple(map(lambda x:sm.zfill(hex(x)[2:],2),
+                                (c.Red(), c.Green(), c.Blue())))).upper()

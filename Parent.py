@@ -13,6 +13,7 @@ __doc__=INFO['doc']%INFO
 import configparser as ConfigParser
 import _thread as thread
 import os,string,sys,time,types,webbrowser, pprint
+import queue, re, subprocess, threading
 import _spe,sm.scriptutils,sm.wxp
 import dialogs.stcStyleEditor
 
@@ -111,6 +112,9 @@ class Panel(wx.Notebook):
         self.remember           = 0
         self.restartMessage     = ''
         self.runner             = None
+        self._documentationProcess = None
+        self._documentationUrl = None
+        self._documentationPoll = None
         if PLATFORM == 'win32':
             self.LIST_STYLE     = wx.LC_SMALL_ICON# todo: verify this better |wx.LC_LIST
         else:
@@ -488,7 +492,7 @@ class Panel(wx.Notebook):
         dlg = wx.FileDialog(self, "Choose a file - www.stani.be",
             defaultDir=defaultDir, defaultFile="",
             wildcard=info.WORKSPACE_WILDCARD,
-            style=wx.OPEN)
+            style=wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             file = dlg.GetPath()
             try:
@@ -518,7 +522,7 @@ class Panel(wx.Notebook):
             defaultFile = defaultFile,
             defaultDir  = info.dirname(defaultFile),
             wildcard    = info.WORKSPACE_WILDCARD,
-            style       = wx.SAVE|wx.OVERWRITE_PROMPT|wx.CHANGE_DIR)
+            style       = wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT|wx.FD_CHANGE_DIR)
         if dlg.ShowModal() == wx.ID_OK:
             file = dlg.GetPath()
             try:
@@ -997,9 +1001,95 @@ class Panel(wx.Notebook):
                 self.SetStatusText(HELP_SORRY%library,1)
 
     def python_documentation_server(self):
-        from pydoc import __file__ as fileName
-        os.spawnl(os.P_NOWAIT,info.PYTHON_EXEC,info.PYTHON_EXEC,fileName,'-g')
-        self.messageHtml('http://localhost:7464/')
+        process = self._documentationProcess
+        if process is not None and process.poll() is None:
+            if self._documentationUrl:
+                self.messageHtml(self._documentationUrl)
+            return
+        self._stopDocumentationServer()
+        environment = os.environ.copy()
+        environment['PYTHONIOENCODING'] = 'utf-8:replace'
+        try:
+            process = subprocess.Popen(
+                [sys.executable, '-u', '-m', 'pydoc', '-n', '127.0.0.1', '-p', '0'],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, text=True, encoding='utf-8',
+                errors='replace', env=environment,
+                creationflags=subprocess.CREATE_NO_WINDOW if info.WIN else 0)
+        except OSError as error:
+            self.messageError('Could not start Python documentation server:\n%s' % error)
+            return
+        self._documentationProcess = process
+        self._documentationMessages = queue.Queue()
+        self._documentationOutput = []
+        self._documentationStarted = time.monotonic()
+        threading.Thread(target=self._readDocumentationOutput,
+                         args=(process, self._documentationMessages), daemon=True).start()
+        self._documentationPoll = wx.CallLater(50, self._pollDocumentationServer, process)
+
+    @staticmethod
+    def _readDocumentationOutput(process,messages):
+        # Only pipe I/O happens in this worker; wx controls stay on the GUI thread.
+        try:
+            for line in process.stdout:
+                messages.put(line)
+        except (OSError, ValueError) as error:
+            messages.put('Could not read pydoc startup output: %s' % error)
+        finally:
+            process.stdout.close()
+            messages.put(None)
+
+    def _pollDocumentationServer(self,process):
+        if self.frame.dead or process is not self._documentationProcess:
+            return
+        ended = False
+        while True:
+            try:
+                line = self._documentationMessages.get_nowait()
+            except queue.Empty:
+                break
+            if line is None:
+                ended = True
+                continue
+            self._documentationOutput.append(line.strip())
+            self._documentationOutput = self._documentationOutput[-20:]
+            match = re.search(r'^Server ready at (http://127\.0\.0\.1:([0-9]+)/)\s*$', line)
+            if match and 0 < int(match.group(2)) < 65536 and process.poll() is None:
+                self._documentationUrl = match.group(1)
+                self._documentationPoll = None
+                self.messageHtml(self._documentationUrl)
+                return
+        returnCode = process.poll()
+        timedOut = time.monotonic()-self._documentationStarted > 10
+        if ended or returnCode is not None or timedOut:
+            details = '\n'.join(self._documentationOutput) or 'No server-ready URL was received.'
+            if timedOut:
+                details = 'Timed out waiting for pydoc (10 seconds).\n' + details
+            elif returnCode is not None:
+                details = 'pydoc exited with code %s.\n%s' % (returnCode, details)
+            self._stopDocumentationServer()
+            self.messageError('Python documentation server failed to start:\n%s' % details)
+            return
+        self._documentationPoll = wx.CallLater(50, self._pollDocumentationServer, process)
+
+    def _stopDocumentationServer(self):
+        if self._documentationPoll is not None:
+            self._documentationPoll.Stop()
+            self._documentationPoll = None
+        process = self._documentationProcess
+        self._documentationProcess = None
+        self._documentationUrl = None
+        if process is None:
+            return
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=0.5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=1)
+        if process.stdin is not None:
+            process.stdin.close()
 
     def wxwindows_documentation(self):
         WxPythonDocs=self.get('WxPythonDocs')
@@ -1137,6 +1227,7 @@ class Panel(wx.Notebook):
                 child.Raise()
                 child.SetStatusText('Please save this file before quitting SPE.')
                 return False
+        self._stopDocumentationServer()
         eventManager.DeregisterWindow(self)
         self.timer.Stop()
         self.frame.dead = 1

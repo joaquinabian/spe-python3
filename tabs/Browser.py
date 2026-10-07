@@ -201,7 +201,7 @@ class Panel(wxgPanel):
 
     def add(self,folders):
         """Add folders to the listbox."""
-        if type(folders) not in [types.ListType,types.TupleType]:
+        if not isinstance(folders, (list, tuple)):
             folders=[folders]
         already = self.getFolders()
         for folder in folders:

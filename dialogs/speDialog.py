@@ -37,7 +37,7 @@ class wxDialog1(wx.Dialog):
         self._init_ctrls(parent)
         self.SetBackgroundColour(wx.Colour(0, 0, 0))
         self.staticBitmap1 = wx.StaticBitmap(
-              bitmap=wx.Bitmap(os.path.join(path,'images','spe_about.jpg'),
+              bitmap=parent.app.bitmap(os.path.join(path,'images','spe_about.jpg'),
               wx.BITMAP_TYPE_JPEG), id=-1,
               name='staticBitmap1', parent=self, pos=wx.Point(0, 0),
               size=wx.Size(480, 100), style=0)

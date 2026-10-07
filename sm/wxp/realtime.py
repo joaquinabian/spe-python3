@@ -360,7 +360,7 @@ class ListCtrl(Ctrl,wx.ListCtrl):
                                 data    = data
                             )
         #get item
-        if self.items.has_key(id):
+        if id in self.items:
             item            = self.items[id]
             item.reset()
         else:
@@ -397,7 +397,7 @@ class ListCtrl(Ctrl,wx.ListCtrl):
             
     def SetStringItem(self,item,column,label):
         text                = item.text
-        if not text.has_key(column) or text[column] != label:
+        if column not in text or text[column] != label:
             text[column]    = label
             item._update.append((wx.ListCtrl.SetStringItem,column,label))
         item._updateAll.append((wx.ListCtrl.SetStringItem,column,label))
