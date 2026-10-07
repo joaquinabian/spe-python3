@@ -16,6 +16,7 @@ def _(x):
 import wx, sm.wxp
 import os, nturl2path, sys
 import pydoc
+import importlib
 
 ERROR = "<h1>"+_("Error")+"</h1><br>"+\
         _("SPE could not generate documentation for ")+\
@@ -78,7 +79,7 @@ save them first before generating any documentation.
         if moduleName!= self.moduleName:
             try:
                 module          = my_import(moduleName)
-                reload(module)
+                importlib.reload(module)
                 doc             = pydoc.html.page(    
                                     moduleName, 
                                     pydoc.html.document(module, moduleName)
@@ -97,20 +98,17 @@ save them first before generating any documentation.
     def index(self):
         heading = pydoc.html.heading(
 '<big><big><strong>Python: Index of Modules</strong></big></big>',
-'#ffffff', '#7799ee')
+extras='')
         def bltinlink(name):
             return '<a href="%s.html">%s</a>' % (name, name)
-        names = filter(lambda x: x != '__main__',
-                       sys.builtin_module_names)
+        names = [name for name in sys.builtin_module_names if name != '__main__']
         contents = pydoc.html.multicolumn(names, bltinlink)
         indices = ['<p>' + pydoc.html.bigsection(
-            'Built-in Modules', '#ffffff', '#ee77aa', contents)]
+            'Built-in Modules', 'index', contents)]
         seen = {}
         for dir in pydoc.pathdirs():
             indices.append(pydoc.html.index(dir, seen))
-        contents = heading + pydoc.join(indices) + '''<p align=right>
+        contents = heading + ''.join(indices) + '''<p align=right>
 <font color="#909090" face="helvetica, arial"><strong>
 pydoc</strong> by Ka-Ping Yee &lt;ping@lfw.org&gt;</font>'''
         self.SetPage(contents)
-
-

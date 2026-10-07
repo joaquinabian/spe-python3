@@ -817,18 +817,25 @@ Please try then to change the encoding or save it again."""%(self.encoding,messa
         if warning  != self.warning:
             #todo: how to implement indicators?!!
             if warning:
-                wx.CallAfter(self.setStatus,warning)
-                wx.CallAfter(self.statusBar.throbber.playFile,'warning.gif')
+                wx.CallAfter(self._syntaxCallback,self.setStatus,warning)
+                wx.CallAfter(self._syntaxCallback,self.statusBar.throbber.playFile,'warning.gif')
                 if e and hasattr(e,'lineno') and not (e.lineno is None):
-                    wx.CallAfter(self.source.clearError,length)
-                    wx.CallAfter(self.source.markError,e.lineno,e.offset)
+                    wx.CallAfter(self._syntaxCallback,self.source.clearError,length)
+                    wx.CallAfter(self._syntaxCallback,self.source.markError,e.lineno,e.offset)
             else:
-                wx.CallAfter(self.setStatus,STATUS)
-                wx.CallAfter(self.statusBar.throbber.stop)
+                wx.CallAfter(self._syntaxCallback,self.setStatus,STATUS)
+                wx.CallAfter(self._syntaxCallback,self.statusBar.throbber.stop)
                 if getattr(self, 'e', None) and hasattr(self.e,'lineno'):
-                    wx.CallAfter(self.source.clearError,length)
+                    wx.CallAfter(self._syntaxCallback,self.source.clearError,length)
             self.warning = warning
         self.e           = e
+
+    def _syntaxCallback(self,callback,*args):
+        # A background parse can finish after its document has closed.
+        # Check controls only here, on the GUI thread.
+        if self.frame.dead or self.parentFrame.dead or not self.source:
+            return
+        callback(*args)
 
     def onKillFocus(self,event=None):
         if self.app.DEBUG:

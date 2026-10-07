@@ -501,7 +501,7 @@ class PythonBaseSTC(wx_stc.StyledTextCtrl):
             end = self.WordEndPosition(pos,1)
         else:
             end = pos
-        return txt[start-linePos:end-linePos]
+        return self.GetTextRange(start, end)
 
     def getWords(self,word=None,whole=None):
         if not word: word = self.getWord(whole=whole)
@@ -625,14 +625,17 @@ class PythonBaseSTC(wx_stc.StyledTextCtrl):
                     return None
 
     def markError(self,lineno,offset):
-        self.StartStyling(self.PositionFromLine(lineno-1), wx_stc.STC_INDICS_MASK)
-        self.SetStyling(offset, wx_stc.STC_INDIC2_MASK)
-        self.Colourise(0, -1)
+        start = self.PositionFromLine(lineno-1)
+        # SyntaxError columns count characters; Scintilla positions count bytes.
+        end = self.PositionRelative(start, max(0, (offset or 1)))
+        end = min(end if end >= 0 else self.GetTextLength(),
+                  self.GetLineEndPosition(lineno-1))
+        self.SetIndicatorCurrent(2)
+        self.IndicatorFillRange(start, max(0, end-start))
 
     def clearError(self,length):
-        self.StartStyling(0, wx_stc.STC_INDICS_MASK)
-        self.SetStyling(length, 0)
-        self.Colourise(0, -1)
+        self.SetIndicatorCurrent(2)
+        self.IndicatorClearRange(0, self.GetTextLength())
 
     def needsIndent(self,firstWord,lastChar):
         "Tests if a line needs extra indenting, ie if, while, def, etc "
@@ -660,7 +663,7 @@ class PythonBaseSTC(wx_stc.StyledTextCtrl):
         self.AddText(text)
         if not obj: return
         #classes, methods & functions
-        if type(obj) in [types.ClassType,types.TypeType] and hasattr(obj,'__init__'):
+        if isinstance(obj, type) and hasattr(obj,'__init__'):
             init            = obj.__init__
             tip             = getargspec(init).strip()
             if tip in ['(self, *args, **kwargs)','(*args, **kwargs)']:
@@ -782,14 +785,10 @@ else:
 def getargspec(func):
     """Get argument specifications"""
     try:
-        func=func.im_func
-    except:
-        pass
-    try:
-        return inspect.formatargspec(*inspect.getargspec(func)).replace('self, ','')+'\n\n'
-    except:
-        pass
-    try:
-        return inspect.formatargvalues(*inspect.getargvalues(func)).replace('self, ','')+'\n\n'
-    except:
+        signature = inspect.signature(func)
+        parameters = list(signature.parameters.values())
+        if parameters and parameters[0].name == 'self':
+            signature = signature.replace(parameters=parameters[1:])
+        return str(signature) + '\n\n'
+    except (TypeError, ValueError):
         return ''
