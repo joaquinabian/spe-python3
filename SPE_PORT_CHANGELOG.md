@@ -807,3 +807,37 @@ With two documents open, dispatched the existing menu_as_columns handler and all
 As rows does not arrange Windows MDI documents in rows. Its existing MDI branch calls self.frame.Maximize(wx.HORIZONTAL), whereas As columns calls self.frame.Tile(wx.VERTICAL). This is now an observed legacy command-behavior issue, not merely the earlier source-inspection concern. Stopped without modifying Parent.py or the layout architecture. Recommended next step, if authorized, is the single-call correction to self.frame.Tile(wx.HORIZONTAL) in the existing MDI branch, followed by horizontal/vertical/notebook layout and multi-document switching checks. The Linux split-interface branch should be preserved.
 
 The overall core UI pass remains incomplete. Remaining coverage recorded in Pass 15/16 still applies, including Execute/Import in Shell, remaining toolbar/preferences/dialog workflows, terminal actions, full printing/export variants and online help availability. Optional PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki, Blender and other legacy tools remain deferred. No dependencies or UI architecture changes. Linux remains supported but runtime-untested; macOS remains out of scope. The user's normal profile was not used. Temporary harness/profile/capture/log files were removed after testing. Python 3.12 parsing and git diff --check passed.
+
+## Pass 19: Windows MDI rows; core Shell import compatibility and package checkpoint (2026-10-07)
+
+### Files changed
+
+- Parent.py: in the existing MDI branch of as_rows only, replace self.frame.Maximize(wx.HORIZONTAL) with self.frame.Tile(wx.HORIZONTAL). The menu handler, UI wording, As columns, Cascade and document-window architecture are unchanged. The Linux split-interface else branch is untouched.
+- sm/scriptutils.py: only the executed built-in Import into Shell path: replace removed string.lower(ext) with ext.lower(); replace sys.modules.has_key(modName) with membership; import importlib locally and replace removed reload() with importlib.reload(). Each concrete blocker was observed and fixed in a separate run. No changes to optional tools, the unrelated run/profiling helper, or unreached package-discovery APIs.
+- SPE_PORT_CHANGELOG.md: fix, tests, remaining coverage and next decision.
+
+### Windows arrangement tests
+
+Temporary harness runs executed SPE.py --debug in real wx event loops, using isolated profiles within the project root. Existing As rows/As columns menu handlers were dispatched, with GUI events allowed to settle between operations. Exactly three child documents were open for arrangement tests.
+
+- As rows: child positions (0,502), (0,251), (0,0), each sized (1916,251). Assertions verified equal horizontal origins/widths and three vertically stacked, non-overlapping rows.
+- As columns: child positions (1276,0), (638,0), (0,0), each sized (638,754). Assertions verified equal vertical origins/heights and three side-by-side, non-overlapping columns.
+- Native Windows MDI Cascade: positions (0,0), (26,26), (52,52), each sized (1682,520); assertions verified distinct staggered origins and overlapping windows. This exercised the native frame.Cascade implementation, not a simulated physical click on the Windows system menu.
+- Retiled as rows, activated two children in succession and verified app.childActive identity. Closed the active tiled child normally, verified its removal and two surviving documents, then activated another survivor successfully.
+- No captured callback exceptions occurred during arrangement, activation, close, subsequent tests, or final normal shutdown. GUI settling continued through the scheduled shutdown; MainLoop returned 0. Three-document As notebook and every system-menu interaction were not tested in this pass.
+
+One later harness rerun initially reused a profile containing restored test documents, invalidating its exactly-three setup assertion. The test harness was corrected to use a fresh isolated directory per run; no application persistence behavior was changed. Final arrangement assertions passed in that fresh-profile run.
+
+### Resumed built-in core pass
+
+Execute into Shell ran selected code assigning Spanish Unicode text and produced the expected value in shell.locals. Import into Shell initially failed at string.lower, then sys.modules.has_key; after each minimal fix, SPE was rerun and standalone source import succeeded with its expected Spanish Unicode module value. Repeated import after changing the source left the old value: captured diagnostics identified name 'reload' is not defined. After the importlib.reload fix, repeated import reported success and exposed the changed Unicode value. The fixture changed size and timestamp to avoid mistaking Python bytecode-cache timestamp behavior for a compatibility failure.
+
+These checks verified actual shell locals/module state. Import diagnostics were captured at stdout in the automated harness; comprehensive Shell/Session/Locals panel rendering and history behavior are not newly claimed here.
+
+### Next non-trivial behavior decision: package-relative imports
+
+A fixture package mdi_package contained __init__.py, helper.py and main.py, with main.py using from .helper import value. Opening main.py and invoking the same built-in Import into Shell attempted import main and reported: attempted relative import with no known parent package. No mdi_package module was exposed in shell.locals. The application remained running and closed normally, without callback exceptions; the harness intentionally failed its expected-package-result assertion.
+
+Stopped before changing legacy module discovery/import behavior. GetPackageModuleName currently treats this file as standalone; inspection shows IsOnPythonPath returns true for any non-empty sys.path entry rather than comparing it with the requested directory. Recognizing enclosing packages and choosing qualified module names/search paths needs a reviewed policy, especially for packages not already imported and name collisions. Recommended next step is a narrowly scoped package-aware Import into Shell correction with standalone/reload/package-relative-import regression tests. No path-resolution policy, automatic package loading, optional tool code, or package format was changed in this pass.
+
+The systematic built-in core UI pass remains incomplete. Earlier remaining coverage still applies: full toolbar dispatch, Preferences subdialogs, real modal picker/confirmation interaction, remaining search variants, Run/Stop/arguments and terminal actions, PyFilling, signature insertion, remaining document/layout workflows, full printing/export variants and external help/link availability. Optional PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki, Blender and other legacy tools remain deliberately deferred. Linux remains supported but runtime-untested; its split-interface path was not altered or tested. macOS remains out of scope. No new dependencies or architecture changes. The normal user profile was not used or rewritten. Temporary harness/profile/log files were removed; the pre-existing untracked .codex directory was left untouched. Changed source parses under Python 3.12 and git diff --check passes.

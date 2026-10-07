@@ -74,7 +74,7 @@ def run(fileName=None,source=None,mainDict=__main__.__dict__,profiling=0):
 
 #---Import Module: from pywin.framework.scriptutils  (c)Mark Hammond------------
 def importMod(pathName,mainDict=None):
-    import os,string,sys,__main__
+    import os,string,sys,__main__,importlib
     print()
     # If already imported, dont look for package
     path, modName = os.path.split(pathName)
@@ -84,7 +84,7 @@ def importMod(pathName,mainDict=None):
         if hasattr(mod, '__file__'):
             fname = mod.__file__
             base, ext = os.path.splitext(fname)
-            if string.lower(ext) in ['.pyo', '.pyc']:
+            if ext.lower() in ['.pyo', '.pyc']:
                 ext = '.py'
             fname = base + ext
             if os.path.abspath(fname)==os.path.abspath(pathName):
@@ -94,7 +94,7 @@ def importMod(pathName,mainDict=None):
         modName, newPath = GetPackageModuleName(pathName)
         if newPath and newPath not in sys.path:
             sys.path.insert(0,newPath)
-    if sys.modules.has_key(modName):
+    if modName in sys.modules:
         bNeedReload = 1
         what = "reload"
     else:
@@ -108,7 +108,7 @@ def importMod(pathName,mainDict=None):
         if not mainDict:mainDict=__main__.__dict__
         exec(codeObj, mainDict)
         if bNeedReload:
-            reload(sys.modules[modName])
+            importlib.reload(sys.modules[modName])
         print('Successfully ' + what + 'ed module "'+modName+'"')
     except Exception as message:
         print('Failed to ' + what + ' module "'+modName+'" (%s)'%message)

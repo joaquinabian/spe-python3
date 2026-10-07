@@ -700,7 +700,7 @@ class Panel(wx.Notebook):
 
     def as_rows(self,event):
         if hasattr(self.frame,'Tile'):
-            self.frame.Maximize(wx.HORIZONTAL)
+            self.frame.Tile(wx.HORIZONTAL)
         else:
             tabs    = getattr(self.frame,'tabs',None)
             if tabs:
