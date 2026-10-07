@@ -254,7 +254,42 @@ class Panel(wx.Notebook):
         if not os.path.isfile(file):
             self._createNewDefaultWorkspace()
         self.workspace['defaultconfig']=ConfigParser.ConfigParser()
-        self.workspace['defaultconfig'].read(file)
+        try:
+            # read() suppresses filesystem errors; those are not corrupt state.
+            with open(file, 'r') as workspaceFile:
+                self.workspace['defaultconfig'].read_file(workspaceFile)
+        except (ConfigParser.Error, UnicodeError) as error:
+            # Exclusive creation protects existing backups on Windows and Linux.
+            with open(file, 'rb') as workspaceFile:
+                original = workspaceFile.read()
+            backup = file + '.corrupt'
+            suffix = 0
+            while True:
+                try:
+                    backupFile = open(backup, 'xb')
+                except FileExistsError:
+                    suffix += 1
+                    backup = file + '.corrupt.' + str(suffix)
+                else:
+                    with backupFile:
+                        backupFile.write(original)
+                    break
+            # Filesystem failures above propagate: recovery requires preservation.
+            fresh = ConfigParser.ConfigParser()
+            for section, value in (('recent', '[]'), ('folders', '[0]'),
+                                   ('notes', ''), ('openfiles', '[]')):
+                fresh.add_section(section)
+                fresh.set(section, '1', value)
+            self.workspace['defaultconfig'] = fresh
+            self.workspace['config'] = fresh
+            self.workspace['file'] = file
+            self.workspace['openfiles'] = []
+            wx.CallAfter(self.message,
+                         'The workspace file could not be loaded: %s\n%s\n\n'
+                         'SPE started with a default/empty workspace.\n'
+                         'The original file was preserved at:\n%s' %
+                         (file, error, backup), wx.OK | wx.ICON_WARNING)
+            return
         
         #read the specific workspace for the 'local' items
         #this can be blocked in two ways:

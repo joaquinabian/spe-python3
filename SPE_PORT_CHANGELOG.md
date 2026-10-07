@@ -512,3 +512,68 @@ Additional passes:
 - Final run completed with no captured callback exceptions and MainLoop returned 0. All three changed source files parse under Python 3.12; diff whitespace validation passes.
 
 All requested loading tests pass. No additional configured-encoding/source-semantics conflict requiring review was encountered under the specified loading rules. Optional tools/plugins, font selection/configuration/fallback, output decoding, and macOS code were not modified. Linux remains runtime-untested; shared loading code preserves both supported interface paths. The temporary harness and fixtures were removed. Native modal error dialogs and changes/removal of an existing valid coding declaration were not exhaustively exercised; this pass is limited to loading boundaries and necessary codec-preserving Save changes.
+
+
+## Pass 11: session/state verification; malformed-workspace recovery checkpoint (2026-10-07)
+
+### Scope and files changed
+
+No application source files were changed in this pass. Only SPE_PORT_CHANGELOG.md was updated. A temporary harness ran SPE.py --debug in separate Windows processes with an isolated .spe profile inside the project root. It redirected the existing sm.osx.userPath lookup in memory before SPE modules loaded; it did not change path handling in the application or access/overwrite the user's normal saved profile. Temporary harness/profile files were removed afterward. Font selection, configuration, and fallback remained unchanged.
+
+### Persistence behavior verified
+
+1. Opened three Python files through Parent.openList, including a filename containing a space. Used the actual Preferences dialog's controls and OnSaveButton path to save TabWidth=6 and Backup=False. Did not exercise font controls.
+2. Set workspace notes to `session notes`, enabled RememberLastWorkspace/SaveOnExit in the isolated test profile, restored the main window from maximized state, and set position (55,65), size (860,640).
+3. Closed via the normal frame.Close path. MainLoop returned 0 with no captured callback exceptions.
+4. Launched a separate fresh SPE process using the same isolated profile. Verified TabWidth=6 and Backup=False, all three open documents, all three Recent entries, workspace notes, window position (55,65), and size (860,640). MainLoop returned 0 after normal closing with no callback exceptions.
+5. The last restored document (`tres.py`) was active. Inspection of the existing .sws serialization confirms it stores open file order plus line/column tuples, but no separate active-document field. No new active-document persistence semantics were added. Restored nonzero cursor positions and custom named workspaces were not separately tested in this pass.
+6. The core state exercised here is text INI/configparser data: defaults.cfg and defaults.sws. Workspace lists/tuples are stored as their existing string representations, not pickle data. No pickle conversion or configuration-format migration was needed or performed. These core tests do not establish compatibility of every other bundled component's pickle use.
+
+### Unsaved document prompt and Cancel
+
+In a separate real SPE run, created an unsaved document, inserted text, and invoked normal application Close. Verified that the native unsaved-document dialog appeared. Sent its Cancel command, then asserted the main window remained shown, its dead flag was false, and the unsaved text was unchanged. Cleared only the temporary document and closed normally. MainLoop returned 0 with no captured callback exceptions.
+
+### Concrete failure and stop for review
+
+A separate isolated profile contained a malformed defaults.sws with no section headers. SPE failed startup at Parent.__openWorkspace__ when the unguarded defaultconfig.read(file) raised configparser.MissingSectionHeaderError. OnInit returned false; no main window startup verification was reached for that profile. This is the next concrete blocker. Recovery was not implemented before the requested design checkpoint.
+
+The recovery behavior needs review because SPE automatically saves preferences during startup and normally rewrites workspace state on closing. Merely ignoring the parse error and starting with empty state can overwrite the original malformed file later. Recommended narrow policy: preserve the malformed workspace as a distinct backup, warn clearly, and start with an empty/default workspace using the existing INI format. Define fallback/backup behavior without generalizing into a configuration-format or persistence architecture redesign.
+
+Normal-profile persistence is verified, but the overall persistence milestone is not complete until malformed-state startup recovery is resolved. Malformed preference values, obsolete serialized values, duplicate options, and other corrupted-state variants have not yet been comprehensively tested; do not infer their recovery from the successful normal-profile test.
+
+### Integrated Shell sub-milestone
+
+The Shell control constructs as part of successful normal startup, but the separate expression/Unicode/history/navigation tests were not run. The user requested this sub-milestone after session/state persistence works, and the malformed-workspace startup blocker is still pending. No Shell or wxPython third-party code was modified.
+
+Windows runtime only. Linux split and Windows MDI architecture remain unchanged; Linux runtime and macOS were not tested. Existing duplicate image-handler and Preferences static-box parent diagnostics remain non-blocking. The glyph limitation remains accepted and non-blocking. The final diff whitespace check passed.
+
+## Pass 12: malformed default workspace recovery and integrated Shell (2026-10-07)
+
+### Files and exact behavior
+
+- Parent.py: default workspace loading now uses explicit text open/read_file rather than ConfigParser.read, which suppresses filesystem errors. Existing workspace text encoding and INI format remain unchanged.
+- Only configparser.Error and UnicodeError from reading/parsing defaults.sws trigger recovery. PermissionError and other ordinary filesystem failures propagate; backup failures also propagate instead of claiming successful recovery or enabling an empty workspace to overwrite an unpreserved original.
+- Recovery reads the original bytes and exclusively creates defaults.sws.corrupt, then defaults.sws.corrupt.1, .2, etc. Existing backup files are never overwritten. The original remains in place until a later normal workspace save; copying does not alter its bytes.
+- After successful preservation, both active/default configuration references point to a fresh in-memory INI workspace: recent/openfiles are [], folders is [0], notes is empty. The active path is defaults.sws. Recovery returns before loading the previous named workspace or restoring its documents. Original startup behavior supplies the empty unnamed editor document.
+- One deferred native warning identifies the failed file, the parse/decode error, the default/empty workspace, and the backup path. Existing normal save/close writes a new defaults.sws; no persistence path points at the backup.
+- SPE_PORT_CHANGELOG.md: records this implementation and verification. No Shell source, optional tools, fonts, configuration format, or UI architecture changed.
+
+### Windows verification
+
+Temporary harnesses launched SPE.py --debug in the real wx event loop with an isolated profile inside the project root, leaving the user's profile untouched.
+
+- Malformed sectionless defaults.sws: main window appeared, no restored documents/recent entries/notes, exactly one recovery warning, active workspace defaults.sws. The original file remained byte-for-byte unchanged before closing.
+- Preexisting .corrupt was unchanged; .corrupt.1 contained the exact malformed bytes, including CRLF and NUL. A separate boundary test verified first-backup .corrupt naming when no backup exists.
+- Undecodable workspace bytes triggered the same recovery and were preserved exactly in .corrupt.2. Another malformed run selected .corrupt.3, leaving the earlier backups unchanged.
+- The actual native warning dialog was shown once and dismissed via its Windows OK command. Other automated runs intercepted the warning through the existing message method to assert its content/count.
+- Normal close after recovery returned MainLoop 0 and produced a parseable defaults.sws with openfiles state. Separate process restarts loaded this valid state without recovery warnings; preserved backups remained unchanged. No callback exceptions occurred in the completed runs.
+- Injected PermissionError at the explicit text-read boundary and at exclusive backup creation propagated, left original bytes intact, and did not schedule a recovery warning or activate fresh state. This verifies classification, not every possible filesystem failure.
+- Python 3.12 parsing of the changed module and git diff --check passed. Existing unrelated SyntaxWarning/deprecation/duplicate-image diagnostics remain.
+
+### Integrated Shell verification
+
+On separate valid-workspace SPE restarts, verified the integrated Shell control exists and evaluates 2 + 3 to 5; assigns and prints Spanish Unicode text á é ñ ü; retains the exact Unicode value in interpreter locals and output; navigates backward/forward through command history using the existing OnHistoryReplace handler; and accepts the SPE-owned Execute path for print("español: á é ñ ü"). Pending callbacks were allowed to finish before normal closing, which returned MainLoop 0 without callback exceptions. No Shell compatibility fix was required. History navigation was exercised through its handler, not physical keyboard input; history persistence across restarts was not part of this sub-milestone.
+
+### Current state and limits
+
+The requested malformed-default-workspace recovery and integrated Shell sub-milestones pass on Windows. No new non-trivial behavior/design decision was encountered. This change handles failures during INI parsing/decoding; it does not add validation/migration of every serialized workspace value, recover custom named workspaces, or redesign malformed preferences handling. Existing per-field loading behavior remains. Linux runtime remains untested; exclusive backup creation and recovery code use shared cross-platform Python APIs. macOS was not tested. Temporary harnesses and profiles were removed after verification. Courier and the accepted missing-glyph limitation remain unchanged.
