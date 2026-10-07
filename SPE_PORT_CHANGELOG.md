@@ -751,3 +751,34 @@ Review whether to accept/document the native non-ASCII case-conversion limitatio
 Managed documentation serving is working in the verified Windows paths, and UTF-8 Spanish Find in Files is restored. The overall built-in core UI pass is still INCOMPLETE. The resumed harness stopped at case conversion; later queued Execute/Session, UML inheritance and export tests were not reached and must not be counted as passed. Native duplicate/delete-line tests were also not reached after the uppercase assertion. Pass 15's other pending coverage remains pending, including full toolbar dispatch, all preferences subdialogs, real picker/confirmation interaction, terminal/import/PyFilling workflows, complete multi-document/layout assertions, full UML export/printing, and online help availability. The As rows inspection concern and unreached legacy helper methods were not changed.
 
 PyChecker/PyChecker2, WinPdb, wxGlade, XRCed, Kiki, Blender and other optional legacy tools remain deliberately deferred. No optional tool was required by these tests. Shared Windows/Linux paths remain intact; Linux is supported but entirely runtime-untested until real Ubuntu validation. macOS remains out of scope. All temporary harnesses/profiles/logs were removed. Changed modules parse under Python 3.12; git diff --check passes. Earlier uncommitted Pass 15 changes are retained.
+
+## Pass 17: SPE-owned Unicode case conversion; resumed UML checkpoint (2026-10-07)
+
+### Files changed
+
+- sm/wxp/stc.py: override UpperCase/LowerCase and their command IDs only within SPE's PythonBaseSTC, using str.upper()/str.lower(). Route existing Ctrl+Shift+U/Ctrl+U key events through those overrides because native shortcut execution bypasses Python CmdKeyExecute overrides. Other command IDs still delegate to native StyledTextCtrl. Existing menu/command/shortcut wiring is retained; no global wx or StyledTextCtrl patch, normalization, locale/font change, or UI redesign.
+- sm/uml.py: replace the two executed dict.has_key calls in inheritance hierarchy/connection drawing with membership checks; make the sortable export-format keys an explicit list; replace removed Save-dialog constants with wx.FD_SAVE/wx.FD_OVERWRITE_PROMPT. Each was fixed only after a separate failing run.
+- SPE_PORT_CHANGELOG.md: changes, tests and next checkpoint.
+
+### Case-conversion behavior and Windows verification
+
+Conversion reads precisely each existing selected range, replaces changed ranges from end to start, and groups replacements into one undo action. Unselected text and line endings remain unchanged. Anchor/caret direction is restored with UTF-8 byte-position adjustments when Python case conversion changes encoded length or character count. Empty selections remain a no-op, as observed on native StyledTextCtrl; read-only text is untouched. Separate selections and rectangular row selections retain their existing ranges.
+
+Tests ran SPE.py --debug in real Windows wx event loops using an isolated profile inside the project, without changing the user's normal profile:
+
+- Uppercase hola ñ áéíóú ü -> HOLA Ñ ÁÉÍÓÚ Ü and the exact reverse lowercase conversion passed.
+- ASCII uppercase/lowercase passed with unchanged surrounding prefix/suffix text.
+- Multiline Spanish selections preserved CRLF exactly. Forward and reversed selections retained their direction and correct byte endpoints.
+- Undo restored the entire original text and Redo restored the conversion for every selected-text case, including character/byte-length changes: Straße -> STRASSE and İ -> i plus combining dot under Python's own lower semantics.
+- No selection at several caret positions left text and caret unchanged; read-only conversion did nothing.
+- Rectangular Spanish selections and separate selected ranges passed; the latter included UTF-8 byte-length expansion in both ranges.
+- Public UpperCase/LowerCase calls, CmdKeyExecute command IDs, the existing key handler and actual wx EVT_KEY_DOWN dispatch for Ctrl+Shift+U/Ctrl+U all passed. Physical keyboard/OS input simulation was not established; event dispatch is the verified boundary, not a claim of manual keystroke testing.
+- Final case run closed normally with MainLoop returning 0 and no captured callback exceptions. Existing Courier/font behavior is unchanged; its accepted missing-glyph limitation remains non-blocking.
+
+### Resumed core pass and next behavior decision
+
+Native duplicate-line/delete-line commands produced the expected text without exceptions. UML rendering with Base and Child(Base) first failed in hierarchy membership, then connection membership; after the two minimal fixes it rendered and assigned Child hierarchy 1 correctly. Export then separately failed on dict_keys.sort and removed wx.SAVE; after the list and FD_* fixes, its existing bitmap export path completed and wrote a file.
+
+The next assertion found that a selected .png export contains PNM bytes (header P6), not PNG bytes. The existing BITMAP_TYPE table explicitly maps .png to wx.BITMAP_TYPE_PNM. This is a legacy export-format mismatch, not a remaining Python 3 exception. Stopped before changing that mapping: review whether to correct .png to wx.BITMAP_TYPE_PNG or preserve/document the old mislabeled output. Recommended next step is the narrow mapping correction, with actual PNG signature/decoding and other export regression checks. No change to this mapping was made in this pass.
+
+The export picker test used a real wx.FileDialog subclass with automated OK/path responses; physical picker interaction was not tested. Every resumed test run closed normally; the final export run recorded the intentional format assertion failure, not a GUI callback exception. UML printing/page setup/preview, Execute/Import in Shell and the other remaining coverage from Pass 15/16 are still pending; the systematic core UI pass remains incomplete. No optional tools were ported or dependencies added. Linux remains supported but runtime-untested; macOS is out of scope. Temporary harnesses, isolated profile and output files were removed after verification. Changed source parses with Python 3.12 and git diff --check passes.

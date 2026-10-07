@@ -48,7 +48,7 @@ class Class:
     def getHierarchy(self,classes):
         if not self.verified:
             parents = [classes[parent].getHierarchy(classes) 
-                    for parent in self.parents if classes.has_key(parent)]
+                    for parent in self.parents if parent in classes]
             if parents:
                 self.hierarchy  = max(parents)+1
             else:
@@ -187,7 +187,7 @@ class PrintCanvas(ogl.ShapeCanvas):
         .png  Save a Portable Network Graphics file.
         .jpg  Save a Joint Photographic Experts Group file.
         """
-        fileTypes   = BITMAP_TYPE.keys()
+        fileTypes   = list(BITMAP_TYPE.keys())
         fileTypes.sort()
         ext         = fileName[-3:].lower()
         if ext not in fileTypes:
@@ -195,7 +195,7 @@ class PrintCanvas(ogl.ShapeCanvas):
                     self, 
                     "Save image as", ".", "",
                     "|".join(["%s files (*%s)|*%s"%(t.upper(),t,t) for t in fileTypes]),
-                    wx.SAVE|wx.OVERWRITE_PROMPT
+                    wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT
                     )
             if dlg1.ShowModal() == wx.ID_OK:
                 fileName    = dlg1.GetPath()
@@ -439,7 +439,7 @@ class Canvas(PrintCanvas):
                     x       += between+shape.width
                     height  = max(height,shape.height)
                     for parent in u.parents:
-                        if shapes.has_key(parent):
+                        if parent in shapes:
                             line = ogl.LineShape()
                             line.SetCanvas(self)
                             line.SetPen(wx.BLACK_PEN)

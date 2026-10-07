@@ -181,6 +181,50 @@ class PythonBaseSTC(wx_stc.StyledTextCtrl):
                 self.Bind(wx.EVT_RIGHT_UP, self.OnRightClick)
 
     #---events
+    def CmdKeyExecute(self,cmd):
+        if cmd == wx_stc.STC_CMD_UPPERCASE:
+            return self.UpperCase()
+        if cmd == wx_stc.STC_CMD_LOWERCASE:
+            return self.LowerCase()
+        return wx_stc.StyledTextCtrl.CmdKeyExecute(self,cmd)
+
+    def UpperCase(self):
+        return self._unicodeCase(str.upper)
+
+    def LowerCase(self):
+        return self._unicodeCase(str.lower)
+
+    def _unicodeCase(self,convert):
+        if self.GetReadOnly():
+            return
+        selections = [(self.GetSelectionNAnchor(i), self.GetSelectionNCaret(i))
+                      for i in range(self.GetSelections())]
+        changes = {}
+        for anchor, caret in selections:
+            start, end = sorted((anchor, caret))
+            text = self.GetTextRange(start,end)
+            converted = convert(text)
+            if converted != text:
+                changes[start,end] = converted
+        if not changes:
+            return
+        self.BeginUndoAction()
+        try:
+            for (start,end), text in sorted(changes.items(),reverse=True):
+                self.SetTargetStart(start)
+                self.SetTargetEnd(end)
+                self.ReplaceTarget(text)
+        finally:
+            self.EndUndoAction()
+        # Scintilla positions are UTF-8 bytes, including when case conversion
+        # changes character count (for example sharp s -> SS).
+        def shifted(position):
+            return position + sum(len(text.encode('utf-8'))-(end-start)
+                                  for (start,end),text in changes.items() if end <= position)
+        for i,(anchor,caret) in enumerate(selections):
+            self.SetSelectionNAnchor(i,shifted(anchor))
+            self.SetSelectionNCaret(i,shifted(caret))
+
     def OnLeftDown(self,event):
         if not event.ShiftDown():
             self.SetSelectionEnd(0)
@@ -200,7 +244,11 @@ class PythonBaseSTC(wx_stc.StyledTextCtrl):
         control = event.ControlDown()
         #shift=event.ShiftDown()
         alt     = event.AltDown()
-        if key == wx.WXK_RETURN and not control and not alt and not self.AutoCompActive():
+        if key == ord('U') and control and not alt and not event.MetaDown():
+            # Keep Scintilla's existing Ctrl+U / Ctrl+Shift+U shortcuts.
+            command = wx_stc.STC_CMD_UPPERCASE if event.ShiftDown() else wx_stc.STC_CMD_LOWERCASE
+            self.CmdKeyExecute(command)
+        elif key == wx.WXK_RETURN and not control and not alt and not self.AutoCompActive():
             #auto-indentation
             if self.CallTipActive():
                 self.CallTipCancel()
